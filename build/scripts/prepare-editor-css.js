@@ -7,16 +7,23 @@ const path = require('path');
 const srcDir = path.join(__dirname, '..', '..', 'app', 'src', 'css');
 const distDir = path.join(__dirname, '..', '..', 'app', 'dist', 'css');
 
+/*
+ * Both application appearances must be present inside the editor iframe: the
+ * iframe document root receives a data-app-appearance attribute at runtime, so
+ * its scoped selectors need the matching stylesheet to be bundled here too.
+ */
 const targets = {
     'editor.css': [
         'css-variables.css',
         'appearances/publii.css',
+        'appearances/wordpress.css',
         'editor/scrollbar.css',
         'editor/editor.css'
     ],
     'editor-options.css': [
         'css-variables.css',
         'appearances/publii.css',
+        'appearances/wordpress.css',
         'editor/scrollbar.css',
         'editor/editor-options.css'
     ]

@@ -25,6 +25,26 @@ fs.rmSync(vendorDistDir, { recursive: true, force: true });
 fs.mkdirSync(vendorDistDir, { recursive: true });
 
 for (const name of vendorPackages) {
-    fs.cpSync(path.join(vendorSrcDir, name), path.join(vendorDistDir, name), { recursive: true });
+    const src = path.join(vendorSrcDir, name);
+    const dest = path.join(vendorDistDir, name);
+    // Use an explicit recursive copy: fs.cpSync can abort the process on some
+    // Windows filesystems with deeply nested trees (observed exit 127). These
+    // dependencies contain no symlinks, so a plain recursive copy is sufficient.
+    copyDirRecursive(src, dest);
     console.log('Copied: app/dist/vendor/' + name);
+}
+
+function copyDirRecursive (src, dest) {
+    fs.mkdirSync(dest, { recursive: true });
+
+    for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
+        const from = path.join(src, entry.name);
+        const to = path.join(dest, entry.name);
+
+        if (entry.isDirectory()) {
+            copyDirRecursive(from, to);
+        } else {
+            fs.copyFileSync(from, to);
+        }
+    }
 }
