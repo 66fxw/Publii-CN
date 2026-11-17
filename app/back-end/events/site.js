@@ -1,0 +1,1210 @@
+const fs = require('fs-extra');
+const path = require('path');
+const FileHelper = require('../helpers/file.js');
+const slug = require('./../helpers/slug');
+const passwordSafeStorage = require('./../helpers/password-storage.js');
+const ipcMain = require('electron').ipcMain;
+const BrowserWindow = require('electron').BrowserWindow;
+const Site = require('../site.js');
+const Themes = require('../themes.js');
+const openDatabase = require('../helpers/db.connection.js');
+const DBUtils = require('../helpers/db.utils.js');
+const UtilsHelper = require('../helpers/utils.js');
+const normalizePath = require('normalize-path');
+const URLHelper = require('../modules/render-html/helpers/url.js');
+const PathValidator = require('../helpers/path-validator.js');
+const {
+    createSafeSender,
+    trackWorkerProcess,
+    abortWorkerProcess
+} = require('../helpers/ipc.helper.js');
+const { resolveSpellcheckerLanguage } = require('../helpers/spellchecker-language.js');
+const SiteLogs = require('../helpers/site-logs.js');
+
+/*
+ * Events for the IPC communication regarding single sites
+ */
+
+class SiteEvents {
+    constructor(appInstance) {
+        let self = this;
+        this.regenerateProcesses = new Map(); // webContentsId -> process
+        this.regenerateRequests = new Map(); // webContentsId -> latest requested run
+        this.deletingSites = new Set(); // names of websites which are being removed
+        this.appliedSpellcheckerLanguage = null;
+
+        // Windows with websites in different languages take over the shared spellchecker when they get focus
+        if (appInstance.windowManager && typeof appInstance.windowManager.onWindowFocused === 'function') {
+            appInstance.windowManager.onWindowFocused(webContentsId => this.applySpellcheckerLanguageForWindow(appInstance, webContentsId));
+        }
+
+        // Workers and unpacked backups must not outlive the window which started them
+        if (appInstance.windowManager && typeof appInstance.windowManager.onWindowDestroyed === 'function') {
+            appInstance.windowManager.onWindowDestroyed(webContentsId => {
+                self.stopThumbnailsRegeneration(webContentsId);
+                Site.removeTemporaryBackupFiles(appInstance, webContentsId);
+            });
+        }
+
+        /*
+         * Reload site config and data
+         */
+        ipcMain.on('app-site-reload', (event, config) => {
+            if (!config || !self.siteDirExists(appInstance, config.siteName)) {
+                event.sender.send('app-site-reloaded', { status: false });
+                return;
+            }
+
+            let result = appInstance.reloadSite(config.siteName, event.sender.id);
+            let language = this.getSiteLanguage(appInstance, config.siteName);
+            this.setSpellcheckerLanguage(event.sender, language);
+            event.sender.send('app-site-reloaded', result);
+            // A site restored from a backup shows up in the list only now
+            appInstance.notifySitesListChanged(event.sender.id);
+        });
+
+        /*
+         * Save site config
+         */
+        ipcMain.on('app-site-config-save', async function (event, config) {
+            let siteName = '';
+            let siteNames = Object.keys(appInstance.sites);
+            let thumbnailsRegenerateRequired = false;
+
+            if (siteNames.indexOf(config.site) !== -1) {
+                siteName = config.site;
+            } else {
+                event.sender.send('app-site-config-saved', {
+                    status: false,
+                    message: 'site-not-exists'
+                });
+                return;
+            }
+
+            if (config.source === 'server') {
+                self.removeGitConfigDirectory(appInstance, config.site);
+            }
+
+            // Prepare settings
+            config.settings.name = slug(config.settings.name);
+            config.settings.advanced.urls.postsPrefix = slug(config.settings.advanced.urls.postsPrefix);
+            config.settings.advanced.urls.tagsPrefix = slug(config.settings.advanced.urls.tagsPrefix);
+            config.settings.advanced.urls.authorsPrefix = slug(config.settings.advanced.urls.authorsPrefix);
+            config.settings.advanced.urls.pageName = slug(config.settings.advanced.urls.pageName);
+            config.settings.advanced.urls.errorPage = slug(config.settings.advanced.urls.errorPage, true);
+            config.settings.advanced.urls.searchPage = slug(config.settings.advanced.urls.searchPage, true);
+
+            // If user changed the site name
+            if (
+                config.settings.name !== '' &&
+                siteName !== '' &&
+                slug(config.settings.name) !== slug(config.site)
+            ) {
+                // Check if new site name is unique
+                if (
+                    !fs.existsSync(path.join(appInstance.sitesDir, config.settings.name)) &&
+                    slug(config.settings.displayName) === config.settings.name
+                ) {
+                    appInstance.closeDbForSite(config.site);
+
+                    // Local preview serves files under the old name and from the old directory
+                    await appInstance.previewServer.disableSite(config.site);
+
+                    // If yes - rename the dir
+                    delete appInstance.sites[siteName];
+                    siteName = config.settings.name;
+                    fs.renameSync(
+                        path.join(appInstance.sitesDir, config.site),
+                        path.join(appInstance.sitesDir, config.settings.name)
+                    );
+
+                    let dbPath = path.join(appInstance.sitesDir, config.settings.name, 'input', 'db.sqlite');
+                    appInstance.setDbForSite(config.settings.name, new DBUtils(openDatabase(dbPath)));
+
+                    if (appInstance.windowManager) {
+                        appInstance.windowManager.renameSiteLock(config.site, config.settings.name, event.sender.id);
+                    }
+
+                    // Logs of websites without UUID are stored under the name of the website
+                    try {
+                        SiteLogs.rename(appInstance, config.site, config.settings.name, config.settings.uuid);
+                    } catch (error) {
+                        console.log('(!) Unable to move logs of the renamed website:', error);
+                    }
+
+                    // Rename also the backups directory
+                    let backupsDir = appInstance.appConfig.backupsLocation;
+
+                    if(backupsDir) {
+                        let backupsLocation = path.join(backupsDir, config.site);
+                        let newBackupsLocation = path.join(backupsDir, config.settings.name);
+
+                        if (UtilsHelper.dirExists(backupsLocation)) {
+                            fs.renameSync(
+                                backupsLocation,
+                                newBackupsLocation
+                            );
+                        }
+                    }
+
+                    // Rename also the preview directory stored outside of the website
+                    self.renameCustomPreviewFiles(appInstance, config.site, config.settings.name);
+                } else {
+                    // If no - return error
+                    event.sender.send('app-site-config-saved', {
+                        status: false,
+                        message: 'duplicated-name'
+                    });
+
+                    return;
+                }
+            }
+
+            // Check for empty names
+            if (
+                siteName === '' ||
+                config.settings.name === ''
+            ) {
+                event.sender.send('app-site-config-saved', {
+                    status: false,
+                    message: 'empty-name'
+                });
+
+                return;
+            }
+
+            let configFile = path.join(appInstance.sitesDir, siteName, 'input', 'config', 'site.config.json');
+            let oldConfig = FileHelper.readFileSync(configFile, 'utf8');
+            let themesPath = path.join(appInstance.sitesDir, siteName, 'input', 'themes');
+            let newThemeConfig = {};
+            oldConfig = JSON.parse(oldConfig);
+
+            if (config.settings.theme === '' && oldConfig.theme) {
+                config.settings.theme = oldConfig.theme;
+            } else {
+                let themes = new Themes(appInstance, {
+                    site: siteName
+                });
+
+                config.settings.theme = themes.changeTheme(config.settings.theme, oldConfig.theme);
+
+                // Compare the resulting theme, so removing an unused site copy does not ask for new thumbnails
+                if (config.settings.theme && config.settings.theme !== oldConfig.theme) {
+                    thumbnailsRegenerateRequired = true;
+                }
+                let themeConfigPath = path.join(appInstance.sitesDir, siteName, 'input', 'config', 'theme.config.json');
+                let themePath = path.join(themesPath, config.settings.theme);
+                newThemeConfig = Themes.loadThemeConfig(themeConfigPath, themePath);
+            }
+
+
+            if (
+                oldConfig.advanced && (
+                    (oldConfig.advanced.responsiveImages !== config.settings.advanced.responsiveImages) ||
+                    (oldConfig.advanced.imagesQuality !== config.settings.advanced.imagesQuality) || 
+                    (oldConfig.advanced.alphaQuality !== config.settings.advanced.alphaQuality) || 
+                    (oldConfig.advanced.forceWebp !== config.settings.advanced.forceWebp) ||
+                    (oldConfig.advanced.webpLossless !== config.settings.advanced.webpLossless) ||
+                    (!!oldConfig.advanced.forceAvif !== !!config.settings.advanced.forceAvif) ||
+                    (!!oldConfig.advanced.avifLossless !== !!config.settings.advanced.avifLossless) ||
+                    (Number(oldConfig.advanced.avifEffort ?? 4) !== Number(config.settings.advanced.avifEffort ?? 4))
+                )
+            ) {
+                thumbnailsRegenerateRequired = true;
+            }
+
+            if(
+                config.settings.advanced &&
+                config.settings.advanced.openGraphImage &&
+                config.settings.advanced.openGraphImage !== ''
+            ) {
+                let filename = path.parse(config.settings.advanced.openGraphImage);
+                config.settings.advanced.openGraphImage = filename.base;
+            }
+
+            let passwordData = false;
+            let passwordGitData = false;
+            let passphraseData = false;
+            let s3IdData = false;
+            let s3KeyData = false;
+            let ghTokenData = false;
+            let glTokenData = false;
+            let netlifyIdData = false;
+            let netlifyTokenData = false;
+            let siteID = slug(config.settings.name);
+
+            if (config.settings.uuid) {
+                siteID = config.settings.uuid;
+            }
+
+            // Save the password in the keychain
+            if (passwordSafeStorage) {
+                try {
+                    if (
+                        config.settings.deployment.password !== '' && 
+                        config.settings.deployment.password !== 'publii ' + siteID
+                    ) {
+                        passwordData = await self.loadPassword(
+                            config.settings,
+                            'publii',
+                            config.settings.deployment.password
+                        );
+                        config.settings.deployment.password = passwordData.toSave;
+                    }
+
+                    if (
+                        config.settings.deployment.git.password !== '' && 
+                        config.settings.deployment.git.password !== 'publii-git-password ' + siteID
+                    ) {
+                        passwordGitData = await self.loadPassword(
+                            config.settings,
+                            'publii-git-password',
+                            config.settings.deployment.git.password
+                        );
+                        config.settings.deployment.git.password = passwordGitData.toSave;
+                    }
+
+                    if (
+                        config.settings.deployment.passphrase !== '' && 
+                        config.settings.deployment.passphrase !== 'publii-passphrase ' + siteID
+                    ) {
+                        passphraseData = await self.loadPassword(
+                            config.settings,
+                            'publii-passphrase',
+                            config.settings.deployment.passphrase
+                        );
+                        config.settings.deployment.passphrase = passphraseData.toSave;
+                    }
+
+                    if (
+                        config.settings.deployment.s3.id !== '' && 
+                        config.settings.deployment.s3.key !== '' && 
+                        config.settings.deployment.s3.id !== 'publii-s3-id ' + siteID
+                    ) {
+                        s3IdData = await self.loadPassword(
+                            config.settings,
+                            'publii-s3-id',
+                            config.settings.deployment.s3.id
+                        );
+                        s3KeyData = await self.loadPassword(
+                            config.settings,
+                            'publii-s3-key',
+                            config.settings.deployment.s3.key
+                        );
+                        config.settings.deployment.s3.id = s3IdData.toSave;
+                        config.settings.deployment.s3.key = s3KeyData.toSave;
+                    }
+
+                    if (
+                        config.settings.deployment.github.token !== '' &&
+                        config.settings.deployment.github.token !== 'publii-gh-token ' + siteID
+                    ) {
+                        ghTokenData = await self.loadPassword(
+                            config.settings,
+                            'publii-gh-token',
+                            config.settings.deployment.github.token
+                        );
+                        config.settings.deployment.github.token = ghTokenData.toSave;
+                    }
+
+                    if (
+                        config.settings.deployment.gitlab.token !== '' && 
+                        config.settings.deployment.gitlab.token !== 'publii-gl-token ' + siteID
+                    ) {
+                        glTokenData = await self.loadPassword(
+                            config.settings,
+                            'publii-gl-token',
+                            config.settings.deployment.gitlab.token
+                        );
+                        config.settings.deployment.gitlab.token = glTokenData.toSave;
+                    }
+
+                    if (
+                        config.settings.deployment.netlify.id !== '' && 
+                        config.settings.deployment.netlify.token !== '' &&
+                        config.settings.deployment.netlify.token !== 'publii-netlify-token ' + siteID
+                    ) {
+                        netlifyIdData = await self.loadPassword(
+                            config.settings,
+                            'publii-netlify-id',
+                            config.settings.deployment.netlify.id
+                        );
+                        netlifyTokenData = await self.loadPassword(
+                            config.settings,
+                            'publii-netlify-token',
+                            config.settings.deployment.netlify.token
+                        );
+                        config.settings.deployment.netlify.id = netlifyIdData.toSave;
+                        config.settings.deployment.netlify.token = netlifyTokenData.toSave;
+                    }
+                } catch (error) {
+                    event.sender.send('app-site-config-saved', {
+                        status: false,
+                        message: 'no-keyring'
+                    });
+
+                    return;
+                }
+            }
+
+            // Save config
+            fs.writeFileSync(configFile, JSON.stringify(config.settings, null, 4));
+
+            if(passwordData && passwordData.newPassword) {
+                config.settings.deployment.password = passwordData.newPassword;
+            }
+
+            if(passwordGitData && passwordGitData.newPassword) {
+                config.settings.deployment.git.password = passwordGitData.newPassword;
+            }
+
+            if(passphraseData && passphraseData.newPassword) {
+                config.settings.deployment.passphrase = passphraseData.newPassword;
+            }
+
+            if(s3IdData && s3IdData.newPassword) {
+                config.settings.deployment.s3.id = s3IdData.newPassword;
+            }
+
+            if(s3KeyData && s3KeyData.newPassword) {
+                config.settings.deployment.s3.key = s3KeyData.newPassword;
+            }
+
+            if(ghTokenData && ghTokenData.newPassword) {
+                config.settings.deployment.github.token = ghTokenData.newPassword;
+            }
+
+            if(netlifyIdData && netlifyIdData.newPassword) {
+                config.settings.deployment.netlify.id = netlifyIdData.newPassword;
+            }
+
+            if(netlifyTokenData && netlifyTokenData.newPassword) {
+                config.settings.deployment.netlify.token = netlifyTokenData.newPassword;
+            }
+
+            appInstance.sites[config.settings.name] = config.settings;
+
+            let themesHelper = new Themes(appInstance, { site: siteName });
+            let themeConfigPath = path.join(appInstance.sitesDir, siteName, 'input', 'config', 'theme.config.json');
+
+            if (fs.existsSync(themeConfigPath)) {
+                let themeConfigString = FileHelper.readFileSync(themeConfigPath, 'utf8');
+                themesHelper.checkAndCleanImages(themeConfigString);
+            }
+
+            // Send success message
+            event.sender.send('app-site-config-saved', {
+                status: true,
+                siteName: siteName,
+                message: 'success-save',
+                themeName: config.settings.theme,
+                newThemeConfig: newThemeConfig,
+                thumbnailsRegenerateRequired: thumbnailsRegenerateRequired
+            });
+            // Other windows list this site by its (possibly renamed) catalog, display name and logo
+            appInstance.notifySitesListChanged(event.sender.id);
+        });
+
+        /*
+         * Remove an unused theme copy from a website
+         */
+        ipcMain.on('app-site-theme-remove', function (event, config) {
+            if (
+                !config ||
+                !self.siteDirExists(appInstance, config.site) ||
+                !PathValidator.isValidDirSegment(config.directory)
+            ) {
+                event.sender.send('app-site-theme-removed', { status: false });
+                return;
+            }
+
+            let themes = new Themes(appInstance, { site: config.site });
+
+            // The active theme is switched, never removed
+            if (themes.currentTheme(true) === config.directory.toLowerCase()) {
+                event.sender.send('app-site-theme-removed', { status: false });
+                return;
+            }
+
+            let themeDir = PathValidator.resolveValidPath(themes.sitePath, config.directory);
+
+            if (!themeDir || !UtilsHelper.dirExists(themeDir)) {
+                event.sender.send('app-site-theme-removed', { status: false });
+                return;
+            }
+
+            UtilsHelper.removePathRecursively(themeDir);
+
+            event.sender.send('app-site-theme-removed', {
+                status: true,
+                themes: themes.load()
+            });
+        });
+
+        /*
+         * Switch website
+         */
+        ipcMain.on('app-focus-window-with-site', (event, siteName) => {
+            if (appInstance.windowManager) {
+                appInstance.windowManager.focusWindowBySite(siteName);
+            }
+        });
+
+        ipcMain.on('app-site-switch', (event, config) => {
+            if (appInstance.windowManager && appInstance.windowManager.isSiteLockedByOther(config.site, event.sender.id)) {
+                event.sender.send('app-site-switched', { status: false, error: 'site-already-open' });
+                return;
+            }
+
+            if (!config || !self.siteDirExists(appInstance, config.site)) {
+                event.sender.send('app-site-switched', { status: false });
+                return;
+            }
+
+            let result = appInstance.switchSite(config.site, event.sender.id);
+            let language = this.getSiteLanguage(appInstance, config.site);
+            this.setSpellcheckerLanguage(event.sender, language);
+            event.sender.send('app-site-switched', result);
+        });
+
+        /*
+         * Save site theme config
+         */
+        ipcMain.on('app-site-theme-config-save', function (event, data) {
+            if (!data ||
+                !PathValidator.isValidDirSegment(data.site) ||
+                !PathValidator.isValidDirSegment(data.theme)) {
+                event.sender.send('app-site-theme-config-saved', {
+                    status: false
+                });
+                return;
+            }
+
+            let siteData = {
+                site: data.site
+            };
+            let newConfig = data.config;
+            let themeName = data.theme;
+            let themePath = PathValidator.resolveValidPath(appInstance.sitesDir, data.site, 'input', 'themes', themeName);
+            let themeConfigPath = PathValidator.resolveValidPath(appInstance.sitesDir, data.site, 'input', 'config', 'theme.config.json');
+
+            if (!themePath || !themeConfigPath) {
+                event.sender.send('app-site-theme-config-saved', {
+                    status: false
+                });
+                return;
+            }
+
+            let themesHelper = new Themes(appInstance, siteData);
+            themesHelper.updateThemeConfig(newConfig);
+            let themeConfig = Themes.loadThemeConfig(themeConfigPath, themePath);
+
+            event.sender.send('app-site-theme-config-saved', {
+                status: true,
+                newConfig: {
+                    config: themeConfig.config,
+                    customConfig: themeConfig.customConfig,
+                    pageConfig: themeConfig.pageConfig,
+                    postConfig: themeConfig.postConfig,
+                    tagConfig: themeConfig.tagConfig,
+                    authorConfig: themeConfig.authorConfig,
+                    defaultTemplates: themeConfig.defaultTemplates
+                }
+            });
+        });
+
+        /*
+         * Create new website
+         */
+        ipcMain.on('app-site-create', function (event, config, authorName) {
+            config.name = slug(config.name);
+
+            if (config.name.trim() === '') {
+                event.sender.send('app-site-creation-error', {
+                    name: config.name.trim() === '',
+                    author: slug(authorName).trim() === ''
+                });
+
+                return;
+            }
+
+            let site = new Site(appInstance, config);
+            let result = site.create(authorName);
+
+            if (result === 'db-error') {
+                event.sender.send('app-site-creation-db-error');
+                return;
+            }
+
+            if (result === 'duplicate') {
+                event.sender.send('app-site-creation-duplicate');
+                return;
+            }
+
+            config.uuid = site.uuid;
+            config.theme = 'simple';
+            appInstance.sites[config.name] = config;
+
+            // Load newly created db
+            let siteDir = path.join(appInstance.sitesDir, config.name);
+            let dbPath = path.join(siteDir, 'input', 'db.sqlite');
+
+            // Close previous site DB for this window if any
+            if (appInstance.windowManager) {
+                const prevSite = appInstance.windowManager.getSiteForWindow(event.sender.id);
+
+                if (prevSite) {
+                    appInstance.closeDbForSite(prevSite);
+                }
+            }
+
+            appInstance.setDbForSite(config.name, new DBUtils(openDatabase(dbPath)));
+
+            if (appInstance.windowManager) {
+                appInstance.windowManager.setWindowSite(event.sender.id, config.name);
+            }
+
+            result = {
+                siteConfig: appInstance.sites[config.name],
+                siteDir: siteDir,
+                authorName: authorName
+            };
+
+            event.sender.send('app-site-created', result);
+            appInstance.notifySitesListChanged(event.sender.id);
+        });
+
+        /*
+         * Regenerate thumbnails
+         */
+        ipcMain.on('app-site-regenerate-thumbnails', function(event, config) {
+            return self.startThumbnailsRegeneration(appInstance, event.sender, config);
+        });
+
+        /*
+         * Summary shown before thumbnails are regenerated
+         */
+        ipcMain.handle('app-site:thumbnails-summary', function(event, config) {
+            if (!config || typeof config.name !== 'string' || !self.siteDirExists(appInstance, config.name)) {
+                return {
+                    status: 'error'
+                };
+            }
+
+            try {
+                let site = new Site(appInstance, config, true);
+                return site.getThumbnailsSummary();
+            } catch (error) {
+                console.log('(!) Thumbnails summary could not be prepared:', error && error.message);
+
+                return {
+                    status: 'error'
+                };
+            }
+        });
+
+        /*
+         * Tells which secrets from the site config can be read from the system keychain - secrets never leave the main process
+         */
+        ipcMain.handle('app-site:secrets-status', async function(event, siteName) {
+            let status = {};
+
+            if (typeof siteName !== 'string' || !self.siteDirExists(appInstance, siteName)) {
+                return status;
+            }
+
+            try {
+                let configFile = path.join(appInstance.sitesDir, siteName, 'input', 'config', 'site.config.json');
+                let siteConfig = JSON.parse(FileHelper.readFileSync(configFile, 'utf8'));
+                let deployment = siteConfig.deployment || {};
+                let account = siteConfig.uuid ? siteConfig.uuid : slug(siteName);
+                let secrets = {
+                    'publii': deployment.password,
+                    'publii-passphrase': deployment.passphrase,
+                    'publii-git-password': deployment.git && deployment.git.password,
+                    'publii-gh-token': deployment.github && deployment.github.token,
+                    'publii-gl-token': deployment.gitlab && deployment.gitlab.token,
+                    'publii-netlify-id': deployment.netlify && deployment.netlify.id,
+                    'publii-netlify-token': deployment.netlify && deployment.netlify.token,
+                    'publii-s3-id': deployment.s3 && deployment.s3.id,
+                    'publii-s3-key': deployment.s3 && deployment.s3.key
+                };
+                // Only secrets of the selected protocol are read - other protocols can keep unused placeholders
+                let protocolSecrets = {
+                    'ftp': ['publii'],
+                    'ftp+tls': ['publii'],
+                    'sftp': ['publii'],
+                    'sftp+key': ['publii-passphrase'],
+                    'git': ['publii-git-password'],
+                    'github-pages': ['publii-gh-token'],
+                    'gitlab-pages': ['publii-gl-token'],
+                    'netlify': ['publii-netlify-id', 'publii-netlify-token'],
+                    's3': ['publii-s3-id', 'publii-s3-key']
+                };
+                let types = Object.prototype.hasOwnProperty.call(protocolSecrets, deployment.protocol) ? protocolSecrets[deployment.protocol] : [];
+
+                for (let type of types) {
+                    // Only placeholders point to the secrets stored in the keychain
+                    if (typeof secrets[type] !== 'string' || !secrets[type].startsWith(type + ' ')) {
+                        continue;
+                    }
+
+                    let secret = await passwordSafeStorage.getPassword(type, account);
+                    // Previous versions could save the placeholder itself as the secret
+                    status[type] = typeof secret === 'string' && secret !== '' && !secret.startsWith(type + ' ');
+                }
+            } catch (error) {
+                console.log('(!) Unable to check secrets of the website:', error && error.message);
+            }
+
+            return status;
+        });
+
+        ipcMain.on('app-site-abort-regenerate-thumbnails', function(event) {
+            self.stopThumbnailsRegeneration(event.sender.id);
+        });
+
+        /*
+         * Regenerate thumbnails stauts
+         */
+        ipcMain.on('app-site-regenerate-thumbnails-required', function(event, config) {
+            if (!config || typeof config.name !== 'string') {
+                event.sender.send('app-site-regenerate-thumbnails-required-status', { message: false });
+                return;
+            }
+
+            config.name = slug(config.name);
+
+            if (!PathValidator.isValidDirSegment(config.name)) {
+                event.sender.send('app-site-regenerate-thumbnails-required-status', { message: false });
+                return;
+            }
+
+            let site = new Site(appInstance, config, true);
+            site.regenerateThumbnailsIsRequired(createSafeSender(event.sender));
+        });
+
+        /*
+         * Delete website - the confirmation is displayed by the window which sends the request
+         */
+        ipcMain.on('app-site-delete', async function (event, config) {
+            let sender = createSafeSender(event.sender);
+            let siteName = config ? config.site : undefined;
+            let error = false;
+
+            if (!PathValidator.isValidDirSegment(siteName) ||
+                !Object.prototype.hasOwnProperty.call(appInstance.sites, siteName)) {
+                error = 'site-not-exists';
+            } else if (appInstance.windowManager && appInstance.windowManager.isSiteLockedByOther(siteName, sender.id)) {
+                // A website which is open in another window cannot be removed
+                error = 'site-already-open';
+            } else if (self.deletingSites.has(siteName)) {
+                // Moving the website to the trash takes a while - the same request could come again
+                error = 'delete-in-progress';
+            }
+
+            if (error) {
+                sender.send('app-site-deleted', { status: false, error: error });
+                return;
+            }
+
+            self.deletingSites.add(siteName);
+
+            try {
+                let siteConfig = appInstance.sites[siteName];
+                let account = siteConfig.uuid ? siteConfig.uuid : slug(siteConfig.name);
+                let dbWasOpened = !!appInstance.getDbForSite(siteName);
+
+                // Files served by the local preview would block moving the directory
+                await appInstance.previewServer.disableSite(siteName);
+
+                try {
+                    await Site.delete(appInstance, siteName);
+                } catch (trashError) {
+                    console.log('(!) Unable to move the website to the trash:', trashError);
+
+                    // The website stays untouched - with its credentials and on the list
+                    if (dbWasOpened) {
+                        try {
+                            let dbPath = path.join(appInstance.sitesDir, siteName, 'input', 'db.sqlite');
+                            appInstance.setDbForSite(siteName, new DBUtils(openDatabase(dbPath)));
+                        } catch (dbError) {
+                            console.log('(!) Unable to reopen the database of the website:', dbError);
+                        }
+                    }
+
+                    sender.send('app-site-deleted', { status: false, error: 'trash-failed' });
+                    return;
+                }
+
+                // Preview files stored outside of the website directory do not go to the trash with it
+                self.removeCustomPreviewFiles(appInstance, siteName);
+
+                // Credentials cannot be restored, so they are removed only when the website is already in the trash
+                try {
+                    await passwordSafeStorage.deleteAllPasswords(account);
+                } catch (passwordsError) {
+                    console.log('(!) Unable to remove credentials of the deleted website:', passwordsError);
+                }
+
+                // The logs directory is found through the sites list, so it has to be removed first
+                try {
+                    SiteLogs.remove(appInstance, siteName);
+                } catch (logsError) {
+                    console.log('(!) Unable to remove logs of the deleted website:', logsError);
+                }
+
+                delete appInstance.sites[siteName];
+
+                // Release the lock of the deleting window, so the name can be reused right away
+                if (appInstance.windowManager && appInstance.windowManager.getSiteForWindow(sender.id) === siteName) {
+                    appInstance.windowManager.clearWindowSite(sender.id);
+                }
+
+                sender.send('app-site-deleted', { status: true });
+                appInstance.notifySitesListChanged(sender.id);
+            } finally {
+                self.deletingSites.delete(siteName);
+            }
+        });
+
+        /*
+         * Clone website
+         */
+        ipcMain.on('app-site-clone', function (event, config) {
+            if (!config ||
+                !PathValidator.isValidDirSegment(config.catalogName) ||
+                typeof config.siteName !== 'string') {
+                event.sender.send('app-site-cloned', false);
+                return;
+            }
+
+            let clonedWebsiteData = Site.clone(appInstance, config.catalogName, config.siteName);
+            event.sender.send('app-site-cloned', clonedWebsiteData);
+            appInstance.notifySitesListChanged(event.sender.id);
+        });
+
+        /*
+         * Save custom CSS
+         */
+        ipcMain.on('app-site-css-save', function (event, config) {
+            if (!config ||
+                !self.siteDirExists(appInstance, config.site) ||
+                !config.code ||
+                typeof config.code.normal !== 'string') {
+                event.sender.send('app-site-css-saved', false);
+                return;
+            }
+
+            Site.saveCustomCSS(appInstance, config.site, config.code);
+            event.sender.send('app-site-css-saved', true);
+        });
+
+        /*
+         * Load custom CSS
+         */
+        ipcMain.on('app-site-css-load', function (event, config) {
+            if (!config || !self.siteDirExists(appInstance, config.site)) {
+                event.sender.send('app-site-css-loaded', { normal: false });
+                return;
+            }
+
+            let customCSS = Site.loadCustomCSS(appInstance, config.site);
+            event.sender.send('app-site-css-loaded', customCSS);
+        });
+
+        /*
+         * Check website catalog name
+         */
+        ipcMain.on('app-site-check-website-to-restore', async function (event, config) {
+            if (!config ||
+                typeof config.backupPath !== 'string' ||
+                config.backupPath.length === 0 ||
+                config.backupPath.indexOf('\0') !== -1 ||
+                !path.isAbsolute(config.backupPath)) {
+                event.sender.send('app-site-backup-checked', { status: false });
+                return;
+            }
+
+            try {
+                if (!fs.existsSync(config.backupPath) || !fs.statSync(config.backupPath).isFile()) {
+                    event.sender.send('app-site-backup-checked', { status: false });
+                    return;
+                }
+            } catch (e) {
+                event.sender.send('app-site-backup-checked', { status: false });
+                return;
+            }
+
+            let sender = createSafeSender(event.sender);
+            let result = await Site.checkWebsiteBackup(appInstance, config.backupPath, sender.id);
+
+            // The window was closed while the backup was being unpacked, so nobody is going to use these files
+            if (sender.isDestroyed()) {
+                Site.removeTemporaryBackupFiles(appInstance, sender.id);
+                return;
+            }
+
+            sender.send('app-site-backup-checked', result);
+        });
+
+        /*
+         * Check website catalog availability
+         */
+        ipcMain.on('app-site-check-website-catalog-availability', function (event, config) {
+            let result = Site.checkWebsiteCatalogAvailability(appInstance, config.siteName);
+            event.sender.send('app-site-website-catalog-availability-checked', result);
+        });
+
+        /*
+         * Remove temp backup files 
+         */
+        ipcMain.on('app-site-remove-temporary-backup-files', function (event, config) {
+            Site.removeTemporaryBackupFiles(appInstance, event.sender.id);
+        });
+
+        /*
+         * Restore website from backup
+         */
+        ipcMain.on('app-site-restore-from-backup', function (event, config) {
+            if (!config ||
+                typeof config.siteName !== 'string' ||
+                config.siteName.trim() === '' ||
+                !PathValidator.isValidDirSegment(slug(config.siteName).toLowerCase())) {
+                event.sender.send('app-site-restored-from-backup', { status: 'error' });
+                return;
+            }
+
+            // A website which is open in another window cannot be replaced with the backup
+            let catalogName = slug(config.siteName).toLowerCase();
+
+            if (appInstance.windowManager && appInstance.windowManager.isSiteLockedByOther(catalogName, event.sender.id)) {
+                event.sender.send('app-site-restored-from-backup', {
+                    status: 'error',
+                    type: 'site-already-open',
+                    siteCatalogName: catalogName
+                });
+                return;
+            }
+
+            let result = Site.restoreFromBackup(appInstance, config.siteName, event.sender.id);
+            event.sender.send('app-site-restored-from-backup', result);
+        });
+    }
+
+    async startThumbnailsRegeneration(appInstance, webContents, config) {
+        if (!config || typeof config.runId !== 'string' || !config.runId) {
+            return;
+        }
+
+        let request = { runId: config.runId };
+        let sender = createSafeSender(webContents);
+        let completed = false;
+        let isCurrent = () => this.regenerateRequests.get(sender.id) === request;
+        let send = (channel, data) => {
+            if (!isCurrent()) {
+                return false;
+            }
+
+            if (channel !== 'app-site-regenerate-thumbnails-progress') {
+                completed = true;
+            }
+
+            return sender.send(channel, Object.assign({}, data, { runId: request.runId }));
+        };
+        let reportError = () => send('app-site-regenerate-thumbnails-error', {
+            message: { translation: 'tools.thumbnails.errorTitle' }
+        });
+
+        this.regenerateRequests.set(sender.id, request);
+
+        try {
+            let previous = this.regenerateProcesses.get(sender.id);
+
+            if (previous) {
+                // Keep the worker tracked until it exits, including after Stop, so a quick restart waits too.
+                await new Promise(resolve => {
+                    previous.once('close', resolve);
+                    abortWorkerProcess(previous);
+                });
+            }
+
+            // A newer Start, Stop or a closed window can cancel a request while it waits.
+            if (!isCurrent() || sender.isDestroyed()) {
+                return;
+            }
+
+            if (!this.siteDirExists(appInstance, config.name)) {
+                reportError();
+                this.regenerateRequests.delete(sender.id);
+                return;
+            }
+
+            let site = new Site(appInstance, config, true);
+            let worker = site.regenerateThumbnails(Object.assign({}, sender, { send }));
+
+            if (!worker) {
+                this.regenerateRequests.delete(sender.id);
+                return;
+            }
+
+            trackWorkerProcess(this.regenerateProcesses, sender.id, worker);
+            this.showRegenerateProgressInTaskbar(webContents, worker, isCurrent);
+
+            worker.on('error', error => {
+                console.log('(!) Thumbnails worker failed:', error && error.message);
+
+                if (!completed) {
+                    reportError();
+                }
+            });
+
+            worker.once('close', () => {
+                if (!completed) {
+                    reportError();
+                }
+
+                if (this.regenerateProcesses.get(sender.id) === worker) {
+                    this.regenerateProcesses.delete(sender.id);
+                }
+
+                if (isCurrent()) {
+                    this.regenerateRequests.delete(sender.id);
+                }
+            });
+        } catch (error) {
+            console.log('(!) Thumbnails regeneration could not start:', error && error.message);
+            reportError();
+
+            if (isCurrent()) {
+                this.regenerateRequests.delete(sender.id);
+            }
+        }
+    }
+
+    stopThumbnailsRegeneration(webContentsId) {
+        this.regenerateRequests.delete(webContentsId);
+        abortWorkerProcess(this.regenerateProcesses.get(webContentsId));
+    }
+
+    /**
+     * Mirrors the regeneration progress on the Dock icon (macOS) and the taskbar button (Windows, Linux)
+     *
+     * @param webContents - window which started the regeneration
+     * @param regenerateProcess - worker process, or nothing when the regeneration could not start
+     */
+    showRegenerateProgressInTaskbar(webContents, regenerateProcess, isCurrent) {
+        let win = BrowserWindow.fromWebContents(webContents);
+
+        if (!win || !regenerateProcess) {
+            return;
+        }
+
+        let setProgress = (value) => {
+            if (!win.isDestroyed()) {
+                win.setProgressBar(value);
+            }
+        };
+
+        regenerateProcess.on('message', (data) => {
+            if (!isCurrent()) {
+                return;
+            }
+
+            if (data.type === 'progress' && data.total > 0) {
+                setProgress(Math.min(1, data.processed / data.total));
+            }
+
+            if (data.type === 'finished') {
+                setProgress(-1);
+            }
+        });
+
+        regenerateProcess.on('exit', () => setProgress(-1));
+    }
+
+    /**
+     * Returns true when siteName is a safe directory segment which exists under sitesDir.
+     */
+    siteDirExists(appInstance, siteName) {
+        if (!PathValidator.isValidDirSegment(siteName)) {
+            return false;
+        }
+
+        try {
+            let siteDir = path.join(appInstance.sitesDir, siteName);
+            return fs.existsSync(siteDir) && fs.statSync(siteDir).isDirectory();
+        } catch (e) {
+            return false;
+        }
+    }
+
+    async loadPassword(settings, type, newPassword) {
+        let account = slug(settings.name);
+
+        if (settings.uuid) {
+            account = settings.uuid;
+        }
+
+        if (!settings.deployment.askforpassword || type !== 'publii') {
+            // Placeholder of another account (e.g. after renaming a website without UUID) is never saved as the secret,
+            // the server settings ask to enter the secret again
+            if (typeof newPassword === 'string' && newPassword.startsWith(type + ' ')) {
+                return {
+                    newPassword: '',
+                    toSave: type + ' ' + account
+                };
+            }
+
+            let existingPassword = await passwordSafeStorage.getPassword(type, account);
+
+            if (newPassword !== '') {
+                if (newPassword === type + ' ' + account) {
+                    newPassword = existingPassword;
+                } else {
+                    await passwordSafeStorage.setPassword(type, account, newPassword);
+                }
+            } else if (existingPassword !== null) {
+                // Remove the password from the storage if it still exists
+                // and user provided an empty password now
+                await passwordSafeStorage.deletePassword(type, account);
+            }
+
+            return {
+                newPassword: newPassword,
+                toSave: type + ' ' + account
+            };
+        }
+
+        await passwordSafeStorage.deletePassword(type, account);
+
+        return {
+            newPassword: '',
+            toSave: ''
+        };
+    }
+
+    getSiteLanguage (appInstance, siteName) {
+        if (process.platform === 'darwin' || !siteName) {
+            return 'null';
+        }
+
+        let configPath = path.join(appInstance.sitesDir, siteName, 'input', 'config', 'site.config.json');
+        let config = FileHelper.readFileSync(configPath, 'utf8');
+        
+        try {
+            config = JSON.parse(config);
+
+            if (config.language) {
+                if (config.language === 'custom') {
+                    return config.customLanguage;
+                }
+
+                return config.language;
+            }
+        } catch (e) {
+            console.log('(!) An error occurred during detecting site language');
+        }
+
+        return 'null';
+    }
+
+    setSpellcheckerLanguage (webContents, language) {
+        if (process.platform === 'darwin') {
+            return;
+        }
+
+        let languageToUse = resolveSpellcheckerLanguage(language, webContents.session.availableSpellCheckerLanguages);
+
+        if (!languageToUse) {
+            console.log('(!) Unable to set spellchecker to use selected language - ' + language);
+            return;
+        }
+
+        // The language is applied again on every window focus, so skip the calls which change nothing
+        if (languageToUse === this.appliedSpellcheckerLanguage) {
+            return;
+        }
+
+        webContents.session.setSpellCheckerLanguages([languageToUse]);
+        this.appliedSpellcheckerLanguage = languageToUse;
+        console.log('Set spellchecker to:', languageToUse);
+    }
+
+    /**
+     * The spellchecker language belongs to the session shared by all windows,
+     * so it has to follow the website of the window which is currently in use
+     */
+    applySpellcheckerLanguageForWindow (appInstance, webContentsId) {
+        if (process.platform === 'darwin') {
+            return;
+        }
+
+        let win = appInstance.windowManager.getWindow(webContentsId);
+        let siteName = appInstance.windowManager.getSiteForWindow(webContentsId);
+
+        if (!win || win.isDestroyed() || !siteName) {
+            return;
+        }
+
+        try {
+            this.setSpellcheckerLanguage(win.webContents, this.getSiteLanguage(appInstance, siteName));
+        } catch (error) {
+            console.log('(!) Unable to set the spellchecker language for the focused window:', error);
+        }
+    }
+
+    removeGitConfigDirectory (appInstance, siteName) {
+        let gitDirPath = path.join(appInstance.sitesDir, siteName, 'output', '.git');
+
+        if (UtilsHelper.dirExists(gitDirPath)) {
+            UtilsHelper.removePathRecursively(gitDirPath);
+        }
+    }
+
+    // Previews location selected in the app settings - the preview of the website is stored in its subdirectory
+    getCustomPreviewDir (appInstance, siteName) {
+        let appConfig = appInstance.appConfig || {};
+        let previewsLocation = typeof appConfig.previewsLocation === 'string' ? appConfig.previewsLocation.trim() : '';
+
+        if (previewsLocation === '') {
+            return null;
+        }
+
+        return path.join(previewsLocation, siteName);
+    }
+
+    renameCustomPreviewFiles (appInstance, oldSiteName, newSiteName) {
+        let previewDir = this.getCustomPreviewDir(appInstance, oldSiteName);
+
+        if (!previewDir || !UtilsHelper.dirExists(previewDir)) {
+            return;
+        }
+
+        let newPreviewDir = this.getCustomPreviewDir(appInstance, newSiteName);
+
+        try {
+            // Preview files are regenerated, so a stale directory left by a removed website can be replaced
+            fs.removeSync(newPreviewDir);
+            fs.renameSync(previewDir, newPreviewDir);
+        } catch (error) {
+            console.log('(!) Unable to move the preview files of the renamed website:', error);
+        }
+    }
+
+    removeCustomPreviewFiles (appInstance, siteName) {
+        let previewDir = this.getCustomPreviewDir(appInstance, siteName);
+
+        if (!previewDir) {
+            return;
+        }
+
+        try {
+            fs.removeSync(previewDir);
+        } catch (error) {
+            console.log('(!) Unable to remove the preview files of the deleted website:', error);
+        }
+    }
+}
+
+module.exports = SiteEvents;

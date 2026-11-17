@@ -1,0 +1,134 @@
+import codeLanguages from '../../../shared/code-languages';
+
+export default {
+    selector: '#post-editor',
+    file_picker_types: 'image',
+    contextmenu: false,
+    plugins: "advlist autolink autosave codesample link image lists pagebreak searchreplace media table autoresize emoticons toc",
+    toolbar1: "bold italic underline strikethrough forecolor publiilink unlink emoticons blockquote alignleft aligncenter alignright bullist numlist image gallery media table toc",
+    toolbar2: "styles blocks codesample searchreplace hr readmore undo redo restoredraft removeformat sourcecode",
+    toolbar3: "",
+    icons: "publii",
+    block_formats: 'Paragraph=p;Heading 1=h1;Heading 2=h2;Heading 3=h3;Heading 4=h4;Heading 5=h5;Heading 6=h6;Address=address;Pre=pre;Code=code;Blockquote=blockquote',
+    extended_valid_elements: "img[id|accesskey|class|dir|lang|style|tabindex|title|role|src|sizes|srcset|alt|usemap|ismap|width|height|loading|decoding|fetchpriority|crossorigin|referrerpolicy],a[*],altGlyph[*],altGlyphDef[*],altGlyphItem[*],animate[*],animateColor[*],animateMotion[*],animateTransform[*],circle[*],clipPath[*],color-profile[*],cursor[*],defs[*],desc[*],discard[*],ellipse[*],feBlend[*],feColorMatrix[*],feComponentTransfer[*],feComposite[*],feConvolveMatrix[*],feDiffuseLighting[*],feDisplacementMap[*],feDistantLight[*],feDropShadow[*],feFlood[*],feFuncA[*],feFuncB[*],feFuncG[*],feFuncR[*],feGaussianBlur[*],feImage[*],feMerge[*],feMergeNode[*],feMorphology[*],feOffset[*],fePointLight[*],feSpecularLighting[*],feSpotLight[*],feTile[*],feTurbulence[*],filter[*],font[*],font-face[*],font-face-format[*],font-face-name[*],font-face-src[*],font-face-uri[*],foreignObject[*],g[*],glyph[*],glyphRef[*],hatch[*],hatchpath[*],hkern[*],iframe[*],image[*],line[*],linearGradient[*],marker[*],mask[*],mesh[*],meshgradient[*],meshpatch[*],meshrow[*],metadata[*],missing-glyph[*],mpath[*],path[*],pattern[*],polygon[*],polyline[*],radialGradient[*],rect[*],set[*],solidcolor[*],stop[*],style[*],svg[*],switch[*],symbol[*],text[*],textPath[*],title[*],tref[*],tspan[*],unknown[*],use[*],view[*],vkern[*],publii-amp,publii-non-amp,script[*],i[*],video[*],audio[*],source[*],stream[*],input[*]",
+    valid_children: '+a[div|p|figure|pre|h1|h2|h3|h4|h5|h6|header|footer|article|aside|section|table|blockquote|video]',
+    formats: {
+        alignleft: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-left' },
+        aligncenter: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-center' },
+        alignright: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-right' },
+        alignjustify: { selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-justify' }
+    },
+    preview_styles: false,
+    resize: false,
+    menubar: false,
+    branding: false,
+    // Keep the TinyMCE iframe body id - Publii and theme editor.css files target body#tinymce (HugeRTE defaults to "hugerte")
+    body_id: 'tinymce',
+    xss_sanitization: false,
+    // Isolate the editor preview without changing published iframe permissions.
+    // Nested embed previews (YouTube, Vimeo) inherit these sandbox flags, so they cannot navigate the app window or open popups.
+    // Chrome logs "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing" - expected:
+    // allow-same-origin is required for HugeRTE to control the iframe document, allow-scripts is required for embed previews to render,
+    // and the content_security_policy below (script-src 'none') prevents any script inside the editor document from removing the sandbox.
+    iframe_attrs: {
+        name: 'publii-wysiwyg-editor',
+        sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation'
+    },
+    content_security_policy: "script-src 'none'; frame-src http: https:; object-src 'none';",
+    sandbox_iframes: false,
+    paste_as_text: false,
+    keep_styles: false,
+    image_class_list: [
+        {title: 'None', value: 'post__image'},
+        {title: 'Full image', value: 'post__image post__image--full'},
+        {title: 'Wide image', value: 'post__image post__image--wide'},
+        {title: 'Left-aligned image', value: 'post__image post__image--left'},
+        {title: 'Right-aligned image', value: 'post__image post__image--right'},
+        {title: 'Centered image', value: 'post__image post__image--center'}
+    ],
+    audio_template_callback: function (data) {
+        return '<figure class="post__audio"><audio controls="controls" src="' + data.source + '">' +
+            (data.altsource ? '\n<source src="' + data.altsource + '"' + (data.altsourcemime ? ' type="' + data.altsourcemime + '"' : '') + ' />\n' : '') +
+            '</audio></figure>';
+    },
+    video_template_callback: function (data) {
+        return '<figure class="post__video"><video width="' + data.width + '" height="' + data.height + '"' +
+            (data.poster ? ' poster="' + data.poster + '"' : '') + ' controls="controls">\n' +
+            '<source src="' + data.source + '"' + (data.sourcemime ? ' type="' + data.sourcemime + '"' : '') + ' />\n' +
+            (data.altsource ? '<source src="' + data.altsource + '"' + (data.altsourcemime ? ' type="' + data.altsourcemime + '"' : '') + ' />\n' : '') +
+            '</video></figure>';
+    },
+    iframe_template_callback: function (data) {
+        return '<figure class="post__video"><iframe src="' + data.source + '" width="' + data.width + '" height="' + data.height + '"' +
+            (data.allowfullscreen ? ' allowFullscreen="1"' : '') + '></iframe></figure>';
+    },
+    media_url_resolver: function (data, resolve) {
+        let patterns = [
+            { regex: /youtu\.be\/([\w\-_\?&=.]+)/i, w: 560, h: 314, url: 'www.youtube.com/embed/$1', allowFullscreen: true },
+            { regex: /youtube\.com(.+)v=([^&]+)(&([a-z0-9&=\-_]+))?/i, w: 560, h: 314, url: 'www.youtube.com/embed/$2?$4', allowFullscreen: true },
+            { regex: /youtube.com\/embed\/([a-z0-9\?&=\-_]+)/i, w: 560, h: 314, url: 'www.youtube.com/embed/$1', allowFullscreen: true },
+            { regex: /vimeo\.com\/([0-9]+)/, w: 425, h: 350, url: 'player.vimeo.com/video/$1?title=0&byline=0&portrait=0&color=8dc7dc', allowFullscreen: true },
+            { regex: /vimeo\.com\/(.*)\/([0-9]+)/, w: 425, h: 350, url: 'player.vimeo.com/video/$2?title=0&amp;byline=0', allowFullscreen: true },
+            { regex: /dailymotion\.com\/video\/([^_]+)/, w: 480, h: 270, url: 'www.dailymotion.com/embed/video/$1', allowFullscreen: true },
+            { regex: /dai\.ly\/([^_]+)/, w: 480, h: 270, url: 'www.dailymotion.com/embed/video/$1', allowFullscreen: true }
+        ];
+        let pattern = patterns.find(p => p.regex.test(data.url));
+
+        if (!pattern) {
+            resolve({ html: '' });
+            return;
+        }
+
+        let match = pattern.regex.exec(data.url);
+        let protocolMatch = data.url.match(/^(https?:\/\/|www\.)(.+)$/i);
+        let protocol = protocolMatch && protocolMatch[1] && protocolMatch[1].toLowerCase() !== 'www.' ? protocolMatch[1] : 'https://';
+        let embedUrl = protocol + pattern.url;
+
+        for (let i = 0; i < match.length; i++) {
+            embedUrl = embedUrl.replace('$' + i, () => match[i] || '');
+        }
+
+        embedUrl = embedUrl.replace(/\?$/, '').replace(/"/g, '&quot;');
+
+        resolve({
+            html: '<figure class="post__video"><iframe src="' + embedUrl + '" width="' + pattern.w + '" height="' + pattern.h + '"' +
+                (pattern.allowFullscreen ? ' allowFullscreen="1"' : '') + '></iframe></figure>'
+        });
+    },
+    codesample_languages: codeLanguages,
+    element_format : 'html',
+    fix_list_elements : true,
+    image_caption: true,
+    autosave_ask_before_unload: false,
+    autosave_interval: "10s",
+    autosave_restore_when_empty: false,
+    autosave_retention: "30m",
+    entity_encoding: "raw",
+    allow_script_urls: true,
+    convert_urls: false,
+    text_patterns: [
+        {start: '*', end: '*', format: 'italic'},
+        {start: '**', end: '**', format: 'bold'},
+        {start: '##', format: 'h2'},
+        {start: '###', format: 'h3'},
+        {start: '####', format: 'h4'},
+        {start: '#####', format: 'h5'},
+        {start: '######', format: 'h6'},
+        {start: '1. ', cmd: 'InsertOrderedList'},
+        {start: '* ', cmd: 'InsertUnorderedList'},
+        {start: '- ', cmd: 'InsertUnorderedList'}
+   ],
+   toc_depth: 6,
+   toc_header: "h3",
+   toc_class: "post__toc",
+   rel_list: [
+    {title: 'noreferrer', value: 'noreferrer'},
+    {title: 'nofollow', value: 'nofollow'},
+    {title: 'noopener', value: 'noopener'},
+    {title: 'sponsored', value: 'sponsored'},
+    {title: 'ugc', value: 'ugc'},
+   ],
+   link_context_toolbar: false,
+   link_quicklink: false,
+   codesample_global_prismjs: true
+};

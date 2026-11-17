@@ -1,0 +1,584 @@
+<template>
+  <div
+    :class="{ 'publii-block-gallery-wrapper': true, 'is-empty': isEmpty, 'is-uploading': imageUploadInProgress }"
+    @dragover.stop.prevent="dragOver"
+    @dragleave.stop.prevent="dragLeave"
+    @drop.stop.prevent="drop"
+    @click="resetDeleteConfirmation">
+    <div
+      :class="{ 'publii-block-gallery-content': true, 'is-editing': view === 'edit' }">
+      <draggable
+        v-if="content.images.length > 0 && view === 'preview'"
+        ref="block"
+        v-model="content.images"
+        handle="img"
+        :data-cols="config.columns"
+        :data-count="content.images.length"
+        @start="startImageDrag"
+        @end="endImageDrag"
+        :class="{ 'publii-block-gallery': true, 'is-wide': config.imageAlign === 'wide', 'is-full': config.imageAlign === 'full' }">
+        <div
+          v-for="(image, index) of content.images"
+          :key="'gallery-item-' + index"
+          class="publii-block-gallery-item">
+          <img
+            :src="image.src"
+            :height="image.height"
+            :width="image.width" />
+
+          <button
+            v-if="confirmDelete !== index"
+            class="publii-block-gallery-item-delete"
+            @click.stop.prevent="removeImage(index)">
+            <icon name="trash" />
+          </button>
+
+          <button
+            v-if="confirmDelete === index"
+            class="publii-block-gallery-item-delete is-active has-tooltip"
+            @click.stop.prevent="removeImage(index)">
+            <icon name="open-trash" />
+            <span class="ui-tooltip has-bigger-space">
+              {{ $t('editor.clickToConfirm') }}
+            </span>
+          </button>
+        </div>
+      </draggable>
+
+      <draggable
+        v-if="content.images.length > 0 && view === 'edit'"
+        v-model="content.images"
+        :data-cols="config.columns"
+        :data-count="content.images.length"
+        @start="startImageDrag"
+        @end="endImageDrag"
+        class="publii-block-gallery-list">
+        <div
+          v-for="(image, index) of content.images"
+          :key="'gallery-item-' + index"
+          class="publii-block-gallery-list-item">
+          <div class="publii-block-gallery-list-item-image">
+            <img
+              :src="image.thumbnailSrc"
+              :height="image.height"
+              :width="image.width" />
+          </div>
+
+          <div class="publii-block-gallery-list-item-config">
+            <input type="text" v-model="image.alt" :placeholder="$t('editor.enterAltText')"/>
+            <input type="text" v-model="image.caption" :placeholder="$t('editor.enterCaption')"/>
+          </div>
+        </div>
+      </draggable>
+
+      <div
+        v-if="(content.images.length === 0 || view === 'edit')"
+        :class="{ 'publii-block-gallery-form': true, 'is-visible': content.images.length === 0 }"
+        ref="block">
+        <div
+          :class="{ 'publii-block-gallery-uploader': true, 'publii-block-media-uploader': true, 'is-hovered': isHovered, 'is-uploading': imageUploadInProgress }">
+          <div class="publii-block-media-uploader-inner">
+            <button
+              type="button"
+              class="publii-block-media-upload-target"
+              :disabled="imageUploadInProgress"
+              :aria-label="$t('editor.selectFiles')"
+              @click.prevent="filePickerCallback">
+              <icon
+                class="publii-block-media-upload-image"
+                name="blank-gallery"
+                aria-hidden="true"
+                focusable="false" />
+              <span>{{ $t('image.dropImagesHere') }}</span>
+            </button>
+            <p-button
+              class="publii-block-media-upload-choose"
+              appearance="clean"
+              size="small"
+              :disabled="imageUploadInProgress"
+              :onClick="filePickerCallback">
+              <span aria-hidden="true">+</span>
+              {{ $t('editor.selectFiles') }}
+            </p-button>
+          </div>
+          <upload-progress
+            v-if="imageUploadInProgress"
+            overlay />
+        </div>
+      </div>
+
+      <upload-progress
+        v-if="imageUploadInProgress && content.images.length > 0 && view === 'preview'"
+        class="publii-block-gallery-uploader-loader-overlay"
+        overlay />
+    </div>
+
+    <top-menu
+      ref="top-menu"
+      :config="topMenuConfig"
+      :advancedConfig="configForm" />
+  </div>
+</template>
+
+<script>
+import { accept as imageAccept } from './../../../../../../config/image-upload-formats.js';
+import PButton from '../../../../basic-elements/Button.vue';
+import UploadProgress from '../../../../basic-elements/UploadProgress.vue';
+import '../../../assets/media-uploader.css';
+import Draggable from 'vuedraggable';
+import Block from './../../Block.vue';
+import ConfigForm from './config-form.json';
+import ContentEditableImprovements from './../../helpers/ContentEditableImprovements.vue';
+import EditorIcon from './../../elements/EditorIcon.vue';
+import TopMenuUI from './../../helpers/TopMenuUI.vue';
+import Utils from './../../utils/Utils.js';
+
+export default {
+  name: 'PGallery',
+  mixins: [
+    Block,
+    ContentEditableImprovements
+  ],
+  components: {
+    'p-button': PButton,
+    'upload-progress': UploadProgress,
+    'icon': EditorIcon,
+    'top-menu': TopMenuUI,
+    'draggable': Draggable
+  },
+  data () {
+    return {
+      confirmDelete: false,
+      draggingInProgress: false,
+      isHovered: false,
+      imageUploadInProgress: false,
+      imagesQueue: [],
+      uploadedImages: [],
+      imageUploader: null,
+      view: 'preview',
+      config: {
+        imageAlign: 'center',
+        columns: 3,
+        advanced: {
+          cssClasses: this.getAdvancedConfigDefaultValue('cssClasses'),
+          id: this.getAdvancedConfigDefaultValue('id')
+        }
+      },
+      content: {
+        images: []
+      },
+      topMenuConfig: [
+        {
+          type: 'select',
+          label: this.$t('image.columns'),
+          configKey: 'columns',
+          clearable: false,
+          searchable: false,
+          cssClasses: 'is-narrow',
+          options: [1, 2, 3, 4, 5, 6, 7, 8]
+        },
+        {
+          activeState: function () { return this.config.imageAlign === 'center'; },
+          onClick: function () { this.alignImage('center'); },
+          icon: 'center',
+          tooltip: this.$t('image.centeredImage')
+        },
+        {
+          activeState: function () { return this.config.imageAlign === 'wide'; },
+          onClick: function () { this.alignImage('wide'); },
+          icon: 'wide',
+          tooltip: this.$t('image.wideImage')
+        },
+        {
+          activeState: function () { return this.config.imageAlign === 'full'; },
+          onClick: function () { this.alignImage('full'); },
+          icon: 'full',
+          tooltip: this.$t('image.fullWidthImage')
+        }
+      ]
+    };
+  },
+  computed: {
+    isInsidePublii () {
+      return !!window.process;
+    }
+  },
+  watch: {
+    '$parent.uiOpened': function (newValue) {
+      if (!this.content.images.length) {
+        return;
+      }
+
+      if (newValue) {
+        this.view = 'edit';
+      } else {
+        this.view = 'preview';
+      }
+    }
+  },
+  beforeCreate () {
+    this.configForm = ConfigForm;
+  },
+  mounted () {
+    this.content = Utils.deepMerge(this.content, this.inputContent);
+    this.initFakeFilePicker();
+    this.setParentCssClasses(this.config.imageAlign);
+  },
+  methods: {
+    startImageDrag () {
+      this.draggingInProgress = true;
+      this.isHovered = false;
+    },
+    endImageDrag () {
+      this.draggingInProgress = false;
+      this.isHovered = false;
+    },
+    dragOver (e) {
+      this.isHovered = !this.draggingInProgress &&
+        !this.imageUploadInProgress &&
+        !!e.dataTransfer &&
+        Array.from(e.dataTransfer.types).includes('Files');
+    },
+    dragLeave (e) {
+      this.isHovered = false;
+    },
+    async drop (e) {
+      this.isHovered = false;
+
+      if (this.draggingInProgress || this.imageUploadInProgress) {
+        return;
+      }
+
+      let files = e.dataTransfer.files;
+
+      if (!files.length) {
+        return;
+      }
+
+      this.imagesQueue = [];
+      this.uploadedImages = [];
+
+      for (let i = 0; i < files.length; i++) {
+        this.imagesQueue.push(await mainProcessAPI.normalizePath(await mainProcessAPI.getPathForFile(files[i])));
+      }
+
+      this.imageUploadInProgress = true;
+      this.$parent.$el.setAttribute('style', 'height: ' + this.$parent.$el.clientHeight + 'px; overflow: hidden;');
+      this.uploadImage();
+    },
+    initFakeFilePicker () {
+      this.imageUploader = document.getElementById('post-editor-fake-multiple-images-uploader');
+      this.imageUploader.accept = imageAccept;
+      this.imageUploader.addEventListener('change', () => {
+        if (!this.imageUploader.value) {
+          return;
+        }
+
+        setTimeout(async () => {
+          if (!this.fileSelectionCallback) {
+            return;
+          }
+
+          if (this.imageUploader.files) {
+            this.imagesQueue = [];
+            this.uploadedImages = [];
+
+            for (let i = 0; i < this.imageUploader.files.length; i++) {
+              this.imagesQueue.push(await mainProcessAPI.normalizePath(await mainProcessAPI.getPathForFile(this.imageUploader.files[i])));
+            }
+          } else {
+            return;
+          }
+
+          this.imageUploadInProgress = true;
+          this.$parent.$el.setAttribute('style', 'height: ' + this.$parent.$el.clientHeight + 'px; overflow: hidden;');
+          this.uploadImage();
+        }, 50);
+      });
+    },
+    uploadImage () {
+      let filePath = this.imagesQueue.shift();
+
+      // eslint-disable-next-line
+      mainProcessAPI.send('app-image-upload', {
+        id: this.editor.config.postID,
+        site: window.app.getSiteName(),
+        path: filePath,
+        imageType: 'galleryImages'
+      });
+
+      // eslint-disable-next-line
+      mainProcessAPI.receiveOnce('app-image-uploaded', (data) => {
+        if (data && data.error) {
+          window.app.showAlert({
+            message: window.app.translate(data.translation || 'core.images.imageUnprocessable').replace('{file}', data.file || ''),
+            buttonStyle: 'danger'
+          });
+        } else {
+          let thumbnailSrc = data.thumbnailDimensions ? data.thumbnailPath[0] : data.thumbnailPath;
+          let sizeWidth = data.baseImage.size[0] || '';
+          let sizeHeight = data.baseImage.size[1] || '';
+
+          this.uploadedImages.push({
+            src: data.baseImage.url,
+            thumbnailSrc: thumbnailSrc,
+            height: data.thumbnailDimensions ? data.thumbnailDimensions.height : sizeHeight,
+            width: data.thumbnailDimensions ? data.thumbnailDimensions.width : sizeWidth,
+            dimensions: data.baseImage.size.join('x'),
+            alt: '',
+            caption: ''
+          });
+        }
+
+        if (this.imagesQueue.length) {
+          this.uploadImage();
+        } else {
+          this.content.images.push(...this.uploadedImages);
+          this.uploadedImages = [];
+          this.$parent.$el.removeAttribute('style');
+          this.fileSelectionCallback = false;
+          this.imageUploadInProgress = false;
+          this.imageUploader.value = '';
+          this.$parent.openPopup();
+        }
+      });
+    },
+    filePickerCallback () {
+      this.fileSelectionCallback = true;
+      document.getElementById('post-editor-fake-multiple-images-uploader').click();
+    },
+    alignImage (newValue) {
+      this.config.imageAlign = newValue;
+      this.setParentCssClasses(newValue);
+    },
+    setParentCssClasses (imageMode) {
+      if (imageMode === 'full') {
+        this.$parent.addCustomCssClass('contains-full-image');
+      } else {
+        this.$parent.removeCustomCssClass('contains-full-image');
+      }
+
+      if (imageMode === 'wide') {
+        this.$parent.addCustomCssClass('contains-wide-image');
+      } else {
+        this.$parent.removeCustomCssClass('contains-wide-image');
+      }
+    },
+    removeImage (index) {
+      if (this.confirmDelete !== index) {
+        this.confirmDelete = index;
+      } else {
+        this.content.images.splice(index, 1);
+      }
+    },
+    save () {
+      this.$bus.$emit('block-editor-save-block', {
+        id: this.id,
+        config: JSON.parse(JSON.stringify(this.config)),
+        content: JSON.parse(JSON.stringify(this.content))
+      });
+    },
+    resetDeleteConfirmation () {
+      this.confirmDelete = false;
+    }
+  },
+  beforeDestroy () {
+    this.$bus.$off('block-editor-save-link-popup', this.setLink);
+  }
+}
+</script>
+
+<style>
+
+
+.publii-block-gallery {
+  display: flex;
+  flex-wrap: wrap;
+  margin: -1rem;
+  outline: none;
+  position: relative
+}
+
+.publii-block-gallery-empty-state {
+  color: var(--color-text-subtle);
+  font-family: var(--font-family-sans);
+  font-size: 14px;
+  text-align: center;
+}
+
+.publii-block-gallery-item {
+  cursor: grab;
+  padding: 1rem;
+  position: relative;
+  width: calc(100% / 3);
+
+  & > img {
+    display: block;
+    height: 30vh;
+    max-width: 100%;
+    object-fit: cover;
+    width: 100%;
+  }
+
+  &:hover {
+    .publii-block-gallery-item-delete {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+}
+
+.publii-block-gallery-item-delete {
+  align-items: center;
+  background: var(--color-danger);
+  border: none;
+  border-radius: var(--radius-base);
+  cursor: pointer;
+  display: flex;
+  height: 34px;
+  justify-content: center;
+  left: 25px;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  top: 25px;
+  transition: var(--transition-default);
+  width: 34px;
+  z-index: 2;
+
+  svg {
+    color: var(--white);
+  }
+
+  &:active,
+  &:focus,
+  &:hover {
+    transform: scale(1.1);
+  }
+}
+
+.publii-block-gallery-content {
+  position: relative;
+
+  &.is-editing {
+    display: flex;
+    flex-direction: column-reverse;
+  }
+}
+
+.publii-block-gallery-wrapper .publii-block-gallery-content > .publii-block-gallery-uploader-loader-overlay.is-overlay {
+  inset: 0;
+  width: auto;
+  z-index: 1;
+}
+
+.publii-block-gallery-list {
+}
+
+.publii-block-gallery-list-item {
+  align-items: center;
+  cursor: grab;
+  display: flex;
+  margin: 2rem 0 2.5rem;
+}
+
+.publii-block-gallery-item.sortable-chosen,
+.publii-block-gallery-list-item.sortable-chosen {
+  cursor: grabbing;
+}
+
+.publii-block-gallery-item.sortable-ghost,
+.publii-block-gallery-list-item.sortable-ghost {
+  position: relative;
+
+  &::before {
+    background: oklch(from var(--color-primary) l c h / 5%);
+    border: 1px dashed var(--input-border-focus);
+    border-radius: var(--radius-base);
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+  }
+
+  & > * {
+    opacity: 0;
+  }
+}
+
+.publii-block-gallery-item.sortable-ghost::before {
+  inset: 1rem;
+}
+
+.publii-block-gallery-list-item-image {
+  height: 112px;
+  margin: 0 20px 0 0;
+  overflow: hidden;
+  position: relative;
+  width: 120px;
+
+  img {
+    height: auto;
+    left: 50%;
+    width: 100%;
+    position: absolute;
+    top: 50%;
+    transform: translateX(-50%) translateY(-50%);
+  }
+}
+
+.publii-block-gallery-list-item-config {
+  width: calc(100% - 140px);
+
+  input {
+    cursor: text;
+    display: block;
+    width: 100%;       
+
+    & + input {
+       margin-top: 16px;
+    }
+  }
+}
+
+.publii-block-gallery[data-cols="1"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 1);
+}
+
+.publii-block-gallery[data-cols="2"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 2);
+}
+
+.publii-block-gallery[data-cols="3"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 3);
+}
+
+.publii-block-gallery[data-cols="4"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 4);
+}
+
+.publii-block-gallery[data-cols="5"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 5);
+}
+
+.publii-block-gallery[data-cols="6"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 6);
+}
+
+.publii-block-gallery[data-cols="7"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 7);
+}
+
+.publii-block-gallery[data-cols="8"] .publii-block-gallery-item {
+  flex-grow: 1;
+  width: calc(100% / 8);
+}
+
+</style>

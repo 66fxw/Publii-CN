@@ -1,0 +1,779 @@
+/*
+ * Site instance
+ */
+
+const fs = require('fs-extra');
+const path = require('path');
+const FileHelper = require('./helpers/file.js');
+const openDatabase = require('./helpers/db.connection.js');
+const DBUtils = require('./helpers/db.utils.js');
+const Themes = require('./themes.js');
+const Image = require('./image.js');
+const UtilsHelper = require('./helpers/utils');
+const { forkWorkerWithLogs } = require('./helpers/ipc.helper.js');
+const SiteLogs = require('./helpers/site-logs.js');
+const slug = require('./helpers/slug');
+const defaultAstCurrentSiteConfig = require('./../config/AST.currentSite.config');
+const ImageConversion = require('../shared/image-conversion.js');
+const { shell } = require('electron');
+const CreateFromBackup = require('./../back-end/modules/backup/create-from-backup');
+
+class Site {
+    constructor(appInstance, config, maintenanceMode = false) {
+        this.application = appInstance;
+        this.name = config.name;
+        this.description = config.description;
+        this.uuid = config.uuid;
+        this.displayName = config.displayName;
+        // In maintenance mode we need only the website name
+        if (!maintenanceMode) {
+            this.logo = {};
+            this.logo.icon = config.logo.icon || 'fa fa-book';
+        }
+        this.appDir = this.application.appDir;
+        this.siteDir = path.join(this.application.sitesDir, this.name);
+    }
+
+    /*
+     * Check if the specific site exists
+     */
+    siteExists() {
+        return fs.existsSync(this.siteDir);
+    }
+
+    /*
+     * Create a new site
+     */
+    create(authorName) {
+        if (!this.siteExists()) {
+            this.createDirectories();
+            this.copyDefaultTheme();
+            this.createConfigFiles();
+            let dbResult = this.createDB();
+
+            if (!dbResult) {
+                return 'db-error';
+            }
+
+            this.createAuthor(authorName);
+            return true;
+        }
+        // If site exists
+        console.log('Site called: ' + this.name + ' exists!');
+        return 'duplicate';
+    }
+
+    /*
+     * Create directories
+     */
+    createDirectories() {
+        // Create main dir
+        fs.mkdirSync(this.siteDir);
+        // Create also other dirs
+        fs.mkdirSync(path.join(this.siteDir, 'input'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'config'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'config', 'plugins'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'root-files'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'temp'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'website'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'posts'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'files'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'tags'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'authors'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'media', 'plugins'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'themes'));
+        fs.mkdirSync(path.join(this.siteDir, 'input', 'languages'));
+        fs.mkdirSync(path.join(this.siteDir, 'output'));
+        fs.mkdirSync(path.join(this.siteDir, 'preview'));
+    }
+
+    /*
+     * Copy files of the default theme
+     */
+    copyDefaultTheme () {
+        fs.copySync(
+            path.join(this.application.appDir, 'themes', 'simple'),
+            path.join(this.siteDir, 'input', 'themes', 'simple')
+        );
+    }
+
+    /*
+     * Create config file
+     */
+    createConfigFiles() {
+        let configDir = path.join(this.siteDir, 'input', 'config');
+        let siteConfig = {
+            'uuid': 'uuid-' + (new Date().getTime()) + '-' + (Math.floor(Math.random() * (999999999 - 100000000 + 1)) + 100000000),
+            'name': this.name,
+            'description': '',
+            'displayName': this.displayName,
+            'author': this.author,
+            'logo': this.logo,
+            'theme': 'simple',
+            'advanced': {
+                'urls': {
+                    'cleanUrls': true
+                }
+            }
+        };
+
+        this.uuid = siteConfig.uuid;
+        fs.writeFileSync(path.join(configDir, 'site.config.json'), JSON.stringify(siteConfig, null, 4));
+        fs.writeFileSync(path.join(configDir, 'menu.config.json'), '[]');
+        fs.writeFileSync(path.join(configDir, 'theme.config.json'), '{}');
+    }
+
+    /*
+     * Create database
+     */
+    createDB() {
+        let dbPath = path.join(this.siteDir, 'input', 'db.sqlite');
+
+        try {
+            let db = new DBUtils(openDatabase(dbPath));
+            db.exec(FileHelper.readFileSync(this.application.basedir + '/back-end/sql/1.0.0.sql', 'utf8'));
+            db.close();
+        } catch (error) {
+            console.log('DB error', error);
+            return false;
+        }
+
+        return true;
+    }
+
+    /*
+     * Create author
+     */
+    createAuthor(authorName) {
+        let dbPath = path.join(this.siteDir, 'input', 'db.sqlite');
+        let db = new DBUtils(openDatabase(dbPath));
+        let sqlQuery = db.prepare(`INSERT INTO authors VALUES(1, @name, @slug, '', '{}', '{}')`);
+        sqlQuery.run({
+            name: authorName,
+            slug: slug(authorName).toLowerCase()
+        });
+        db.close();
+    }
+
+    /*
+     * check if regenerate thumbnails is required
+     */
+    regenerateThumbnailsIsRequired(sender) {
+        let themesHelper = new Themes(this.application, { site: this.name });
+        let themeName = themesHelper.currentTheme();
+
+        // If there is no theme selected
+        if(themeName === 'not selected') {
+            sender.send('app-site-regenerate-thumbnails-required-status', {
+                message: false
+            });
+
+            return;
+        }
+
+        // If there is no responsive images configuration
+        let themeConfig = UtilsHelper.loadThemeConfig(path.join(this.siteDir, 'input'), themeName);
+
+        if(!UtilsHelper.responsiveImagesConfigExists(themeConfig)) {
+            sender.send('app-site-regenerate-thumbnails-required-status', {
+                message: false
+            });
+
+            return;
+        }
+
+        // Remove all old responsive directories
+        let mediaPath = path.join(this.siteDir, 'input', 'media');
+        let catalogs = fs.readdirSync(path.join(mediaPath, 'posts'));
+        let galleryCatalogs = [];
+        catalogs = catalogs.map(catalog => 'posts/' + catalog);
+        catalogs.push('website');
+        catalogs = catalogs.filter((catalog) => !(catalog.indexOf('/.') > -1 || catalog.trim() === '' || !catalog || UtilsHelper.fileExists(path.join(mediaPath, catalog))));
+
+        for(let catalog of catalogs) {
+            if(catalog.indexOf('/.') > -1) {
+                continue;
+            }
+
+            // Add gallery catalogs
+            let galleryFullPath = path.join(mediaPath, catalog, 'gallery');
+
+            if(UtilsHelper.dirExists(galleryFullPath)) {
+                let galleryShortPath = path.join(catalog, 'gallery');
+                galleryCatalogs.push(galleryShortPath);
+            }
+        }
+
+        // Add gallery catalogs
+        catalogs = catalogs.concat(galleryCatalogs);
+
+        // Count images for the process
+        let numberOfImagesToRegenerate = this.getNumberOfImagesToRegenerate(mediaPath, catalogs);
+
+        // If there is no posts - abort
+        if(numberOfImagesToRegenerate === 0) {
+            sender.send('app-site-regenerate-thumbnails-required-status', {
+                message: false
+            });
+        } else {
+            sender.send('app-site-regenerate-thumbnails-required-status', {
+                message: true
+            });
+        }
+    }
+
+    /*
+     * Regenerate thumbnails
+     */
+    regenerateThumbnails(sender) {
+        // Get theme configuration
+        let self = this;
+        let themesHelper = new Themes(this.application, { site: this.name });
+        let themeName = themesHelper.currentTheme();
+        let dbPath = path.join(this.siteDir, 'input', 'db.sqlite');
+        let db = new DBUtils(openDatabase(dbPath));
+
+        // If there is no theme selected - abort
+        if(themeName === 'not selected') {
+            sender.send('app-site-regenerate-thumbnails-error', {
+                message: {
+                    translation: 'core.site.noThemeSelected'
+                }
+            });
+
+            return;
+        }
+
+        // If there is no responsive images configuration - abort
+        let themeConfig = UtilsHelper.loadThemeConfig(path.join(this.siteDir, 'input'), themeName);
+
+        if(!UtilsHelper.responsiveImagesConfigExists(themeConfig)) {
+            sender.send('app-site-regenerate-thumbnails-error', {
+                message: {
+                    translation: 'core.site.noConfigurationForResponsiveImages'
+                }
+            });
+
+            return;
+        }
+
+        // Keep existing thumbnails until their replacements have been written successfully.
+        let mediaPath = path.join(this.siteDir, 'input', 'media');
+        let { catalogs, galleryCatalogs } = this.getThumbnailCatalogs(mediaPath);
+
+        for (let catalog of catalogs) {
+            fs.ensureDirSync(path.join(mediaPath, catalog, 'responsive'));
+        }
+
+        // Add gallery catalogs
+        catalogs = catalogs.concat(galleryCatalogs);
+
+        // Count images for the process
+        let numberOfImagesToRegenerate = this.getNumberOfImagesToRegenerate(mediaPath, catalogs);
+
+        // A site without originals may still have obsolete thumbnails to clean up.
+        if (numberOfImagesToRegenerate === 0 && !this.hasExistingThumbnails(mediaPath, catalogs)) {
+            sender.send('app-site-regenerate-thumbnails-error', {
+                message: {
+                    translation: 'core.site.noImagesToRegenerate'
+                }
+            });
+
+            return;
+        }
+
+        // Create featured images post reference
+        this.postImagesRef = db.prepare(`SELECT post_id, url FROM posts_images`).all();
+        // Calculate how many images should be created
+        this.numberOfImages = numberOfImagesToRegenerate;
+        this.totalProgress = 0;
+
+        // Staging stays outside media, so unfinished files cannot be copied into a preview or upload.
+        let temporaryDirectory = fs.mkdtempSync(path.join(this.siteDir, 'input', '.publii-thumbnails-'));
+
+        // For each image - create a new thumbnails (detect featured images)
+        let regenerateProcess;
+
+        try {
+            regenerateProcess = forkWorkerWithLogs(
+                __dirname + '/workers/thumbnails/regenerate',
+                SiteLogs.getWorkerLogsDirectory(this.application, this.name),
+                'regenerate'
+            );
+        } catch (error) {
+            fs.removeSync(temporaryDirectory);
+            db.close();
+            throw error;
+        }
+
+        // Also runs after a forced stop; the worker may not get a chance to clean up itself.
+        regenerateProcess.once('close', () => {
+            fs.rm(temporaryDirectory, {
+                recursive: true,
+                force: true,
+                maxRetries: 10,
+                retryDelay: 100
+            }, error => {
+                if (error) {
+                    console.log('(!) Could not remove temporary thumbnails:', error.message);
+                }
+            });
+        });
+
+        regenerateProcess.send({
+            type: 'dependencies',
+            context: {
+                application: {
+                    appConfig: self.application.appConfig,
+                    appDir: self.application.appDir,
+                    sitesDir: self.application.sitesDir
+                },
+                name: self.name,
+                temporaryDirectory: temporaryDirectory,
+                postImagesRef: self.postImagesRef,
+                totalProgress: self.totalProgress,
+                numberOfImages: self.numberOfImages,
+                numberOfCatalogs: catalogs.length
+            },
+            catalog: catalogs.shift(),
+            mediaPath: mediaPath
+        });
+
+        regenerateProcess.on('message', function(data) {
+            if(data.type === 'empty' && catalogs.length) {
+                regenerateProcess.send({
+                    type: 'next-images',
+                    catalog: catalogs.shift(),
+                    mediaPath: mediaPath
+                });
+            }
+        });
+
+        regenerateProcess.on('message', function(data) {
+            if(data.type === 'progress') {
+                sender.send('app-site-regenerate-thumbnails-progress', {
+                    value: data.value,
+                    processed: data.processed,
+                    total: data.total,
+                    image: data.image,
+                    thumbnails: data.thumbnails || 0,
+                    broken: !!data.broken,
+                    errorMessage: data.errorMessage || '',
+                    files: data.files,
+                    brokenFilesCount: data.brokenFilesCount || 0
+                });
+
+                if(catalogs.length) {
+                    regenerateProcess.send({
+                        type: 'next-images',
+                        catalog: catalogs.shift(),
+                        mediaPath: mediaPath
+                    });
+                }
+
+                return;
+            }
+
+            if (data.type === 'finished') {
+                sender.send('app-site-regenerate-thumbnails-success', {
+                    processed: data.processed,
+                    total: data.total,
+                    brokenFilesCount: data.brokenFilesCount || 0,
+                    brokenFiles: data.brokenFiles || [],
+                    brokenImages: data.brokenImages || []
+                });
+            }
+        });
+
+        db.close();
+
+        return regenerateProcess;
+    }
+
+    /**
+     * Returns the media catalogs whose images get thumbnails: posts, the website options, tags and authors,
+     * and separately the galleries inside them
+     *
+     * @param mediaPath
+     * @returns {{ catalogs: string[], galleryCatalogs: string[] }}
+     */
+    getThumbnailCatalogs(mediaPath) {
+        let readCatalogs = (directory) => {
+            let directoryPath = path.join(mediaPath, directory);
+
+            if (!UtilsHelper.dirExists(directoryPath)) {
+                return [];
+            }
+
+            return fs.readdirSync(directoryPath).map(catalog => directory + '/' + catalog);
+        };
+
+        let catalogs = [].concat(
+            readCatalogs('posts'),
+            ['website'],
+            readCatalogs('tags'),
+            readCatalogs('authors')
+        );
+
+        catalogs = catalogs.filter(catalog => {
+            if (catalog.indexOf('/.') > -1 || catalog.trim() === '') {
+                return false;
+            }
+
+            return UtilsHelper.dirExists(path.join(mediaPath, catalog));
+        });
+
+        let galleryCatalogs = catalogs
+            .map(catalog => path.join(catalog, 'gallery'))
+            .filter(galleryCatalog => UtilsHelper.dirExists(path.join(mediaPath, galleryCatalog)));
+
+        return {
+            catalogs,
+            galleryCatalogs
+        };
+    }
+
+    /**
+     * Checks whether regeneration has files to clean up even when no originals remain.
+     */
+    hasExistingThumbnails(mediaPath, catalogs) {
+        return catalogs.some(catalog => {
+            let isGallery = catalog.endsWith('gallery');
+            let targetDirectory = isGallery ? path.join(mediaPath, catalog) : path.join(mediaPath, catalog, 'responsive');
+
+            if (!UtilsHelper.dirExists(targetDirectory)) {
+                return false;
+            }
+
+            return fs.readdirSync(targetDirectory, { withFileTypes: true }).some(file => {
+                return file.isFile() && (!isGallery || file.name.includes('-thumbnail.'));
+            });
+        });
+    }
+
+    /**
+     * Describes what regenerating thumbnails would do, without changing any file
+     *
+     * @returns {object} status: ready, no-images, no-theme or no-responsive-images-config
+     */
+    getThumbnailsSummary() {
+        let themesHelper = new Themes(this.application, { site: this.name });
+        let themeName = themesHelper.currentTheme();
+
+        if (themeName === 'not selected') {
+            return {
+                status: 'no-theme'
+            };
+        }
+
+        let themeConfig = UtilsHelper.loadThemeConfig(path.join(this.siteDir, 'input'), themeName);
+        let themeDisplayName = themeConfig && themeConfig.name ? themeConfig.name : themeName;
+
+        if (!UtilsHelper.responsiveImagesConfigExists(themeConfig)) {
+            return {
+                status: 'no-responsive-images-config',
+                theme: themeDisplayName
+            };
+        }
+
+        let mediaPath = path.join(this.siteDir, 'input', 'media');
+        let { catalogs, galleryCatalogs } = this.getThumbnailCatalogs(mediaPath);
+        let allCatalogs = catalogs.concat(galleryCatalogs);
+        let images = this.getNumberOfImagesToRegenerate(mediaPath, allCatalogs);
+        let canRegenerate = images > 0 || this.hasExistingThumbnails(mediaPath, allCatalogs);
+        let siteConfigPath = path.join(this.siteDir, 'input', 'config', 'site.config.json');
+        let siteConfig = JSON.parse(JSON.stringify(defaultAstCurrentSiteConfig));
+
+        if (UtilsHelper.fileExists(siteConfigPath)) {
+            siteConfig = UtilsHelper.mergeObjects(siteConfig, JSON.parse(FileHelper.readFileSync(siteConfigPath)));
+        }
+
+        return {
+            status: canRegenerate ? 'ready' : 'no-images',
+            theme: themeDisplayName,
+            images: images,
+            format: ImageConversion.createContext(siteConfig.advanced).format,
+            responsiveImages: !!siteConfig.advanced.responsiveImages
+        };
+    }
+
+    /**
+     * Removes all thumbnails from given gallery catalog
+     *
+     * @param galleryCatalog
+     */
+    removeGalleryThumbnails(galleryCatalog) {
+        let images = fs.readdirSync(galleryCatalog);
+
+        for(let image of images) {
+            if(image.indexOf('-thumbnail.') === -1) {
+                continue;
+            }
+
+            let imagePath = path.join(galleryCatalog, image);
+
+            fs.unlinkSync(imagePath);
+        }
+    }
+
+    /*
+     * Get number of images which shoild be regenerated
+     */
+    getNumberOfImagesToRegenerate(mediaPath, catalogs) {
+        let numberOfImages = 0;
+
+        for(let catalog of catalogs) {
+            if(catalog.indexOf('/.') > -1) {
+                continue;
+            }
+
+            let catalogPath = path.join(mediaPath, catalog);
+            let files = fs.readdirSync(catalogPath);
+
+            for(let file of files) {
+                if(file.substr(0, 1) === '.' || file === 'responsive' || file === 'gallery') {
+                    continue;
+                }
+
+                if(catalog.indexOf('gallery') !== -1 && file.indexOf('-thumbnail.') !== -1) {
+                    continue;
+                }
+
+                if(fs.lstatSync(path.join(mediaPath, catalog, file)).isFile()) {
+                    if (path.parse(file).ext !== '') {
+                        numberOfImages++;
+                    }
+                }
+            }
+        }
+
+        return numberOfImages;
+    }
+
+    /*
+     * Delete website - its directory is moved to the system trash.
+     * The returned promise is rejected when the directory could not be moved.
+     */
+    static async delete(appInstance, name) {
+        let sitePath = path.join(appInstance.sitesDir, name);
+        appInstance.closeDbForSite(name);
+
+        // Keep the short delay used so far between closing the database and moving the directory
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await shell.trashItem(sitePath);
+    }
+
+    /*
+     * Clone website
+     */
+    static clone(appInstance, catalogName, siteName) {
+        let newCatalogName = slug(siteName).toLowerCase();
+        let sitePath = path.join(appInstance.sitesDir, catalogName);
+        let newCatalogFreeName = Site.findFreeName(newCatalogName, appInstance.sitesDir);
+        let newSitePath = path.join(appInstance.sitesDir, newCatalogFreeName);
+        fs.copySync(sitePath, newSitePath);
+        Site.updateNameAndUUIDInSiteConfig(newSitePath, newCatalogFreeName, siteName);
+        let configFilePath = path.join(newSitePath, 'input', 'config', 'site.config.json');
+        let siteConfig = FileHelper.readFileSync(configFilePath);
+        siteConfig = JSON.parse(siteConfig);
+        appInstance.addSite(newCatalogFreeName, siteConfig);
+
+        return {
+            siteName: siteName,
+            siteCatalog: newCatalogFreeName,
+            siteConfig: siteConfig
+        };
+    }
+
+    /**
+     *
+     * Find first free name
+     *
+     * e.g. XYZ -> XYZ copy
+     * e.g. XYZ copy -> XYZ copy copy
+     *
+     * @param {string} name
+     */
+    static findFreeName (name, basePath) {
+        let baseName = name;
+        let dirPath = path.join(basePath, baseName);
+        let currentName = baseName;
+
+        while (UtilsHelper.dirExists(dirPath)) {
+            currentName = baseName + '-copy';
+            dirPath = path.join(basePath, currentName);
+        }
+
+        return currentName;
+    }
+
+    /**
+     * Update site.config.json to use a new name of the website
+     *
+     * @param {string} sitePath
+     * @param {string} newNameSlug
+     */
+    static updateNameAndUUIDInSiteConfig (sitePath, newSiteSlug, newSiteName) {
+        let configFilePath = path.join(sitePath, 'input', 'config', 'site.config.json');
+        let siteConfig = FileHelper.readFileSync(configFilePath);
+        siteConfig = JSON.parse(siteConfig);
+        siteConfig.name = newSiteSlug;
+        siteConfig.uuid = 'uuid-' + (new Date().getTime()) + '-' + (Math.floor(Math.random() * (999999999 - 100000000 + 1)) + 100000000);
+        siteConfig.displayName = newSiteName;
+        siteConfig.deployment = JSON.parse(JSON.stringify(defaultAstCurrentSiteConfig.deployment));
+        siteConfig = JSON.stringify(siteConfig, null, 4);
+        fs.writeFileSync(configFilePath, siteConfig);
+    }
+
+    /*
+     * Load Custom CSS code
+     */
+    static loadCustomCSS(appInstance, name) {
+        let cssPathNormal = path.join(appInstance.sitesDir, name, 'input', 'config', 'custom-css.css');
+        let cssNormal = false;
+        
+        if (UtilsHelper.fileExists(cssPathNormal)) {
+            cssNormal = FileHelper.readFileSync(cssPathNormal, 'utf8');
+        }
+
+        return {
+            normal: cssNormal
+        };
+    }
+
+    /*
+     * Save Custom CSS code
+     */
+    static saveCustomCSS(appInstance, name, code) {
+        let cssPathNormal = path.join(appInstance.sitesDir, name, 'input', 'config', 'custom-css.css');
+        fs.writeFileSync(cssPathNormal, code.normal, 'utf8');
+    }
+
+    /**
+     * Checks for the files consistency on existing websites
+     *
+     * Adds (if missing):
+     * - input/root-files directory
+     * - input/media/files directory
+     * - input/media/pages directory
+     * - input/media/tags directory
+     * - input/media/authors directory
+     * - input/config/plugins directory
+     * - input/config/site.plugins.json file
+     *
+     * Moves .htaccess, robots.txt and _redirects files to root-files directory
+     *
+     * @param siteName
+     */
+    static checkFilesConsistency(appInstance, siteName) {
+        let siteBasePath = path.join(appInstance.sitesDir, siteName, 'input');
+        let rootFilesPath = path.join(siteBasePath, 'root-files');
+        let tagImagesPath = path.join(siteBasePath, 'media', 'tags');
+        let authorImagesPath = path.join(siteBasePath, 'media', 'authors');
+        let mediaFilesPath = path.join(siteBasePath, 'media', 'files');
+        let pluginsPath = path.join(siteBasePath, 'config', 'plugins');
+        let pluginsConfigPath = path.join(siteBasePath, 'config', 'site.plugins.json');
+
+        if(!UtilsHelper.dirExists(rootFilesPath)) {
+            fs.mkdirSync(rootFilesPath, { recursive: true });
+        }
+
+        if(!UtilsHelper.dirExists(mediaFilesPath)) {
+            fs.mkdirSync(mediaFilesPath, { recursive: true });
+        }
+
+        if(!UtilsHelper.dirExists(tagImagesPath)) {
+            fs.mkdirSync(tagImagesPath, { recursive: true });
+        }
+
+        if(!UtilsHelper.dirExists(authorImagesPath)) {
+            fs.mkdirSync(authorImagesPath, { recursive: true});
+        }
+
+        if(!UtilsHelper.dirExists(pluginsPath)) {
+            fs.mkdirSync(pluginsPath, { recursive: true });
+        }
+
+        // Create site.plugins.json if not exists
+        if (!UtilsHelper.fileExists(pluginsConfigPath)) {
+            fs.writeFileSync(pluginsConfigPath, '{}');
+        }
+
+        // Move files - if exists to new root-files directory
+        let filesToMove = {
+            'robots.txt': path.join(siteBasePath, 'config', 'robots.txt'),
+            '.htaccess': path.join(siteBasePath, 'config', '.htaccess'),
+            '.htpasswd': path.join(siteBasePath, 'config', '.htpasswd'),
+            '_redirects': path.join(siteBasePath, 'config', '_redirects')
+        };
+
+        let fileNames = Object.keys(filesToMove);
+
+        for (let i = 0; i < fileNames.length; i++) {
+            let fileName = fileNames[i];
+
+            if(!UtilsHelper.dirExists(rootFilesPath)) {
+                break;
+            }
+
+            if (UtilsHelper.fileExists(filesToMove[fileName])) {
+                let destinationPath = path.join(siteBasePath, 'root-files', fileName);
+                fs.moveSync(filesToMove[fileName], destinationPath);
+            }
+        }
+    }
+
+    static async checkWebsiteBackup (appInstance, backupPath, webContentsId = null) {
+        let siteCreator = new CreateFromBackup(appInstance, backupPath, webContentsId);
+        let result = await siteCreator.prepareBackupToRestore()
+        return result;
+    }
+
+    static removeTemporaryBackupFiles (appInstance, webContentsId = null) {
+        CreateFromBackup.removeTempDir(appInstance, webContentsId);
+    }
+
+    static checkWebsiteCatalogAvailability (appInstance, siteName) {
+        let catalogName = slug(siteName).toLowerCase();
+
+        if (fs.existsSync(path.join(appInstance.sitesDir, catalogName))) {
+            return {
+                catalogExists: true
+            };
+        }
+
+        return {
+            catalogExists: false
+        };
+    }
+
+    static restoreFromBackup (appInstance, siteName, webContentsId = null) {
+        let catalogName = slug(siteName).toLowerCase();
+        let source = CreateFromBackup.getTempDir(appInstance, webContentsId);
+        let destination = path.join(appInstance.sitesDir, catalogName);
+
+        // Without the unpacked backup there is nothing to restore - and an existing website must stay untouched
+        if (catalogName.trim() === '' || !UtilsHelper.dirExists(source)) {
+            return {
+                status: 'error',
+            };
+        }
+
+        if (fs.existsSync(destination)) {
+            UtilsHelper.removePathRecursively(destination);
+        }
+
+        fs.moveSync(source, destination);
+        Site.updateNameAndUUIDInSiteConfig(destination, catalogName, siteName);
+        
+        return {
+            status: 'success',
+            data: {
+                siteCatalogName: catalogName
+            }
+        };
+    }
+}
+
+module.exports = Site;

@@ -1,0 +1,125 @@
+.post-editor {
+   background: var(--bg-primary);
+
+    .appbar {
+        height: var(--topbar-height)!important;
+        position: absolute!important;
+        width: 100%;
+    }
+}
+
+.post-editor-wrapper {
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    padding-top: 11rem;
+    user-select: none;
+}
+
+.post-editor-field-select-tags {
+    width: 480px;
+}
+
+.post-editor-form {
+    height: calc(100vh - 11rem);
+    overflow: hidden;
+    position: relative;
+    width: 100%;
+}
+
+
+/*
+ * Windows & linux adjustments
+ */
+body[data-os="win"] {
+    .post-editor {
+        .topbar {
+            height: 2.2rem;
+        }
+    }
+}
+
+body[data-os="linux"] {
+    .post-editor {
+        .appbar {
+            height: 0!important;
+        }
+
+        .topbar {
+            height: 0;
+        }
+    }
+}
+
+/*
+ * Special styles for win & linux
+ */
+
+body[data-os="win"] {
+    .post-editor-wrapper {
+        height: 100vh;
+        
+    }
+
+    .post-editor-form {
+    }
+}
+
+body[data-os="win"] .post-editor-form-content {
+    height: calc( 100vh - 27.6rem );
+}
+
+body[data-os="linux"] {
+    .post-editor-wrapper {
+        height: 100vh;
+        padding-top: 5.6rem;
+    }
+
+    .post-editor-form {
+        height: calc(100vh - 5.6rem)
+    }
+}
+
+body[data-os="linux"] .post-editor-form-content {
+    height: calc( 100vh - 24.8rem );
+}
+
+
+/*
+ * Responsive improvements
+ */
+
+@media (min-width: 1380px) {
+    .post-editor-form {
+        &.sidebar-open {
+            width: calc(100% - var(--options-sidebar-width));
+        }
+    }
+}
+
+
+/*
+ * Responsive improvements
+ */
+ @media (min-width: 1380px) and (max-width: 1500px) {
+    .post-editor-form {
+        &.sidebar-open {
+            .wrapper.contains-wide-image {
+                max-width: var(--editor-width)!important;
+            }
+            .contains-full-image {
+                width: calc(var(--editor-width) )!important;
+            }
+        }
+    }
+}
+
+@media (min-width: 1501px) and (max-width: 1600px) {
+    .post-editor-form {
+        &.sidebar-open {
+            .contains-full-image {
+                width: calc(var(--editor-width) + 168px) !important
+            }
+        }
+    }
+}

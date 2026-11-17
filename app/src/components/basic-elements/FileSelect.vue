@@ -1,0 +1,167 @@
+<template>
+    <div
+        :class="{ 'box': true, 'is-invalid': invalid }"
+        @click="selectFile">
+        <text-input
+            icon="folder"
+            ref="input"
+            :id="id"
+            :placeholder="placeholder"
+            :disabled="disabled"
+            :invalid="invalid"
+            :value="value"
+            :spellcheck="false"
+            keyboard-blocked />
+
+        <span
+            v-if="fieldValue && !disabled"
+            class="clear"
+            @click.stop="clear">
+            <icon
+                name="close"
+                size="m"
+                non-interactive
+                aria-hidden="true"
+                focusable="false" />
+        </span>
+    </div>
+</template>
+
+<script>
+export default {
+    name: 'fileselect',
+    props: {
+        id: {
+            default: '',
+            required: true,
+            type: String
+        },
+        placeholder: {
+            default: '',
+            required: false,
+            type: String
+        },
+        disabled: {
+            default: false,
+            type: Boolean
+        },
+        invalid: {
+            default: false,
+            type: Boolean
+        },
+        value: {
+            default: '',
+            required: true,
+            type: String
+        },
+        onChange: {
+            default: () => false,
+            type: Function
+        }
+    },
+    data: function() {
+        return {
+            fieldValue: this.value
+        };
+    },
+    watch: {
+        value (newValue, oldValue) {
+            this.fieldValue = newValue;
+            this.$emit('input', this.fieldValue);
+        }
+    },
+    methods: {
+        clear () {
+            this.$refs.input.content = '';
+            this.fieldValue = '';
+            this.onChange('');
+        },
+        async selectFile () {
+            await mainProcessAPI.invoke('app-main-process-select-file', 'file-select');
+
+            mainProcessAPI.receiveOnce('app-file-selected', (data) => {
+                if (data.path === undefined || !data.path.filePaths.length) {
+                    return;
+                }
+
+                this.$refs.input.content = data.path.filePaths[0];
+                this.fieldValue = data.path.filePaths[0];
+                this.$emit('input', this.fieldValue);
+                this.onChange(this.fieldValue);
+            });
+        },
+        getValue () {
+            return this.fieldValue;
+        }
+    }
+}
+</script>
+
+<style scoped>
+
+/* @ToDo: move ".clear" to a separate component - ClearButton */
+
+.box {
+    position: relative;
+
+    input {
+        float: left;
+        padding-left: 4.5rem!important;
+        width: 100%!important;
+    }
+
+    .clear {
+        align-items: center;
+        border-radius: 50%;
+        color: var(--color-danger);
+        cursor: pointer;
+        display: flex;
+        font-size: var(--font-size-ui-xl);
+        font-weight: var(--font-weight-light);
+        height: 3rem;
+        justify-content: center;
+        position: absolute;
+        right: 1.5rem;
+        transition: var(--transition-default);
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3rem;
+
+        & > .icon {
+            position: static;
+        }
+
+        &:active,
+        &:focus,
+        &:hover {
+            color: var(--icon-tertiary-color);
+        }
+        
+        &:hover {
+            background: var(--input-border-color);
+        }   
+    }
+
+    svg {
+        left: .5rem;
+        position: absolute;
+        top: .75rem;
+        z-index: 1;
+    }
+
+    & ~ small.note {
+        color: var(--color-danger);
+        padding: var(--space-4) 0;
+        width: 100%;
+
+        svg {
+            fill: var(--color-danger);
+            height: 1.8rem!important;
+            margin-left: 1.3rem;
+            position: relative;
+            top: 3px;
+            width: 1.8rem!important;
+        }
+    }
+}
+</style>

@@ -1,0 +1,580 @@
+<template>
+    <section
+        class="collection-page"
+        :class="{
+            'content': true,
+            'tags-list-view': true,
+            'no-scroll': editorVisible
+        }">
+        <div
+            v-if="!showEmptyState"
+            class="collection-page-header">
+            <p-header
+                :title="$t('ui.tags')">
+                <header-search
+                    slot="search"
+                    :placeholder="$t('tag.filterOrSearchTags')"
+                    onChangeEventName="tags-filter-value-changed" />
+
+                <p-button
+                    :onClick="addTag"
+                    slot="buttons"
+                    intent="primary"
+                    icon="plus">
+                    {{ $t('tag.addNewTag') }}
+                </p-button>
+            </p-header>
+        </div>
+
+        <collection
+            v-if="!emptySearchResults && hasTags"
+            :columns="5">
+            <collection-header slot="header">
+                <collection-cell>
+                    <checkbox
+                        :aria-label="$t('ui.selectAllVisibleItems')"
+                        value="all"
+                        :checked="allVisibleSelected"
+                        :indeterminate="someVisibleSelected"
+                        :onClick="toggleAllCheckboxes" />
+                </collection-cell>
+
+                <collection-cell>
+                    <collection-sort-button
+                        :label="$t('ui.name')"
+                        :active="orderBy === 'name'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('name')" />
+                </collection-cell>
+
+                <collection-cell
+                    justify-content="center"
+                    text-align="center"
+                    min-width="100px">
+                    <collection-sort-button
+                        :label="$t('ui.posts')"
+                        :active="orderBy === 'postsCounter'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('postsCounter')" />
+                </collection-cell>
+
+                <collection-cell variant="identifier">
+                    <collection-sort-button
+                        :label="$t('ui.id')"
+                        :active="orderBy === 'id'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('id')" />
+                </collection-cell>
+
+                <collection-cell variant="menu"></collection-cell>
+
+                <div
+                    v-if="anyCheckboxIsSelected"
+                    class="tools">
+                    <p-button
+                        icon="trash"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkDelete">
+                        {{ $t('ui.delete') }}
+                    </p-button>
+
+                    <p-button
+                        v-if="selectedTagsAreNotHidden"
+                        icon="hidden-post"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkHide">
+                        {{ $t('ui.hide') }}
+                    </p-button>
+
+                    <p-button
+                        v-if="selectedTagsAreHidden"
+                        icon="unhidden-post"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkUnhide">
+                        {{ $t('ui.unhide') }}
+                    </p-button>
+                </div>
+            </collection-header>
+
+            <collection-row
+                v-for="item in renderedItems"
+                slot="content"
+                :key="'collection-row-' + item.id">
+                <collection-cell>
+                    <checkbox
+                        :aria-label="$t('ui.selectItem', { name: item.name })"
+                        :value="item.id"
+                        :checked="isChecked(item.id)"
+                        :onClick="toggleSelection"
+                        :key="'collection-row-checkbox-' + item.id" />
+                </collection-cell>
+
+                <collection-cell variant="titles">
+                    <h2 class="title">
+                        <a
+                            v-tooltip.focus="item.isHidden ? $t('tag.thisTagIsHidden') : ''"
+                            href="#"
+                            @click.prevent.stop="editTag(item)">
+                            {{ item.name }}
+
+                            <icon
+                                v-if="item.isHidden"
+                                size="xs"
+                                name="hidden-post"
+                                class="tag-status-icon content-status-icon"
+                                v-tooltip.hover="$t('tag.thisTagIsHidden')"
+                                aria-hidden="true"
+                                focusable="false" />
+                        </a>
+                    </h2>
+
+                    <div
+                        v-if="showTagSlugs"
+                        class="tag-slug">
+                        {{ $t('tag.url') }}: /{{ item.slug }}<template v-if="!$store.state.currentSite.config.advanced.urls.cleanUrls">.html</template>
+                    </div>
+                </collection-cell>
+
+                <collection-cell
+                    justify-content="center"
+                    text-align="center">
+                    <a
+                        @click.prevent.stop="showPostsConnectedWithTag(item.name)"
+                        href="#">
+                        {{ item.postsCounter }}
+                    </a>
+                </collection-cell>
+
+                <collection-cell variant="identifier">
+                    {{ item.id }}
+                </collection-cell>
+
+                <collection-cell
+                    variant="menu"
+                    justify-content="flex-end">
+                    <action-menu
+                        :items="tagRowActions(item)"
+                        :label="$t('ui.otherOptions') + ': ' + item.name" />
+                </collection-cell>
+            </collection-row>
+
+            <div
+                v-if="items.length > renderLimit"
+                ref="loadMoreSentinel"
+                slot="content"
+                class="load-more-sentinel">
+            </div>
+        </collection>
+
+        <empty-state
+            v-if="emptySearchResults"
+            :description="$t('tag.noTagsMatchingYourCriteria')"></empty-state>
+
+        <empty-state
+            v-if="showEmptyState"
+            illustrationName="tags"
+            illustrationWidth="344"
+            illustrationHeight="286"
+            :title="$t('tag.noTagsAvailable')"
+            :description="$t('tag.createFirstTag')">
+            <p-button
+                slot="button"
+                icon="plus"
+                :onClick="addTag">
+                {{ $t('tag.addNewTag') }}
+            </p-button>
+        </empty-state>
+
+        <transition>
+            <tag-form
+                v-if="editorVisible"
+                :form-animation="formAnimation"
+                :return-focus="editorTrigger" />
+        </transition>
+    </section>
+</template>
+
+<script>
+import focusReturnTarget from '../helpers/focus-return-target.js';
+import CollectionSortButton from './basic-elements/CollectionSortButton.vue';
+import escapeHTML from '../helpers/escape-html.js';
+import Tooltip from '../helpers/tooltip.js';
+import TagForm from './TagForm';
+import CollectionCheckboxes from './mixins/CollectionCheckboxes.js';
+import CollectionOrdering from './mixins/CollectionOrdering.js';
+
+export default {
+    directives: {
+        tooltip: Tooltip
+    },
+    name: 'tags',
+    mixins: [
+        CollectionOrdering,
+        CollectionCheckboxes
+    ],
+    components: {
+        CollectionSortButton,
+        'tag-form': TagForm
+    },
+    data: function() {
+        return {
+            formAnimation: false,
+            editorVisible: false,
+            editorTrigger: null,
+            filterValue: '',
+            orderBy: this.$store.state.ordering.tags.orderBy,
+            order: this.$store.state.ordering.tags.order,
+            selectedItems: [],
+            renderLimit: 100
+        };
+    },
+    computed: {
+        items: function() {
+            return this.$store.getters.siteTags(this.filterValue, this.orderBy, this.order).map(item => {
+                if (item.additionalData) {
+                    if (typeof item.additionalData === 'string') {
+                        item.isHidden = item.additionalData.indexOf('"isHidden":true') > -1;
+                    } else {
+                        item.isHidden = item.additionalData.isHidden;
+                    }
+                }
+
+                return item;
+            });
+        },
+        renderedItems () {
+            return this.items.slice(0, this.renderLimit);
+        },
+        hasTags: function() {
+            return this.$store.state.currentSite.tags && !!this.$store.state.currentSite.tags.length;
+        },
+        showEmptyState: function() {
+            return !this.hasTags;
+        },
+        emptySearchResults: function() {
+            return this.filterValue !== '' && !this.items.length;
+        },
+        selectedTagsAreNotHidden () {
+            let selectedTags = this.items.filter(item => this.selectedItems.indexOf(item.id) > -1);
+
+            if (!selectedTags.length) {
+                return false;
+            }
+
+            let notHiddenTags = selectedTags.filter(item => !item.isHidden);
+            return !!notHiddenTags.length;
+        },
+        selectedTagsAreHidden () {
+            let selectedTags = this.items.filter(item => this.selectedItems.indexOf(item.id) > -1);
+
+            if (!selectedTags.length) {
+                return false;
+            }
+
+            let hiddenTags = selectedTags.filter(item => item.isHidden);
+            return !!hiddenTags.length;
+        },
+        showTagSlugs () {
+            return this.$store.state.app.config.showPostSlugs;
+        }
+    },
+    watch: {
+        filterValue () {
+            this.renderLimit = 100;
+        },
+        editorVisible (newValue, oldValue) {
+            if (newValue !== oldValue) {
+                this.formAnimation = true;
+
+                setTimeout(() => {
+                    this.formAnimation = false;
+                }, 500);
+            }
+        }
+    },
+    created () {
+        this.loadMoreObserver = new IntersectionObserver(entries => {
+            if (entries.some(entry => entry.isIntersecting)) {
+                this.renderLimit += 100;
+            }
+        });
+    },
+    beforeMount () {
+        mainProcessAPI.send('app-tags-load', {
+            "site": this.$store.state.currentSite.config.name
+        });
+
+        mainProcessAPI.receiveOnce('app-tags-loaded', (data) => {
+            this.$store.commit('setTags', data.tags);
+            this.$store.commit('setPostsTags', data.postsTags);
+        });
+    },
+    mounted: function() {
+        this.orderBy = this.$store.state.ordering.tags.orderBy;
+        this.order = this.$store.state.ordering.tags.order;
+
+        this.$bus.$on('tags-filter-value-changed', (newValue) => {
+            this.filterValue = newValue.trim().toLowerCase();
+        });
+
+        this.$bus.$on('hide-tag-item-editor', () => {
+            if (document.querySelector('.tags-list-view .item.is-edited')) {
+                document.querySelector('.tags-list-view .item.is-edited').classList.remove('is-edited');
+            }
+            
+            this.editorVisible = false;
+        });
+
+        this.$bus.$on('site-switched', () => {
+            setTimeout(() => {
+                this.saveOrdering(this.$store.state.ordering.tags.orderBy, this.$store.state.ordering.tags.order);
+            }, 500);
+        });
+
+        this.$bus.$on('app-settings-saved', newSettings => {
+            if (this.orderBy + ' ' + this.order !== newSettings.tagsOrdering) {
+                let order = newSettings.tagsOrdering.split(' ');
+                this.saveOrdering(order[0], order[1]);
+            }
+        });
+
+        this.$nextTick(this.observeLoadMoreSentinel);
+    },
+    updated () {
+        this.observeLoadMoreSentinel();
+    },
+    methods: {
+        observeLoadMoreSentinel () {
+            this.loadMoreObserver.disconnect();
+
+            if (this.$refs.loadMoreSentinel) {
+                this.loadMoreObserver.observe(this.$refs.loadMoreSentinel);
+            }
+        },
+        addTag () {
+            this.editorTrigger = focusReturnTarget(document.activeElement);
+            this.$bus.$on('show-tag-item-editor', () => ({
+                id: 0,
+                name: '',
+                slug: '',
+                description: '',
+                additionalData: {
+                    isHidden: false,
+                    metaTitle: '',
+                    metaDescription: '',
+                    template: ''
+                }
+            }));
+
+            this.editorVisible = true;
+        },
+        editTag (item) {
+            this.editorTrigger = focusReturnTarget(document.activeElement);
+            if (document.querySelector('.tags-list-view .item.is-edited')) {
+                document.querySelector('.tags-list-view .item.is-edited').classList.remove('is-edited');
+            }
+
+            document.querySelector('.tags-list-view .item input[value="' + parseInt(item.id, 10) + '"]').parentNode.parentNode.classList.add('is-edited');
+            this.editorVisible = true;
+
+            setTimeout(() => {
+                this.$bus.$emit('show-tag-item-editor', item);
+            }, 100);
+        },
+        bulkDelete () {
+            const selectedItems = this.getSelectedItems();
+
+            if (selectedItems.length === 0) {
+                return;
+            }
+
+            if (selectedItems.length === 1) {
+                const item = this.items.find(item => item.id === selectedItems[0]);
+                this.deleteTag(item);
+                return;
+            }
+
+            this.$bus.$emit('confirm-display', {
+                message: this.$t('tag.removeTagMessage'),
+                okLabel: this.$t('tag.deleteTags'),
+                isDanger: true,
+                okClick: this.deleteSelected
+            });
+        },
+        bulkHide () {
+            this.changeStateForSelected('hidden');
+        },
+        bulkUnhide () {
+            this.changeStateForSelected('hidden', true);
+        },
+        changeStateForSelected (status, inverse = false) {
+            this.changeTagsState(this.getSelectedItems(), status, inverse);
+        },
+        toggleTagVisibility (item) {
+            this.changeTagsState([item.id], 'hidden', !!item.isHidden);
+        },
+        deleteTag (item) {
+            this.$bus.$emit('confirm-display', {
+                message: this.$t('tag.removeSingleTagMessage', {
+                    name: escapeHTML(item.name)
+                }),
+                okLabel: this.$t('tag.deleteTag'),
+                isDanger: true,
+                okClick: () => this.deleteTags([item.id])
+            });
+        },
+        tagRowActions (item) {
+            return [
+                {
+                    label: this.$t('ui.edit'),
+                    value: 'edit',
+                    icon: 'edit',
+                    onClick: () => this.editTag(item)
+                },
+                {
+                    label: item.isHidden ? this.$t('ui.unhide') : this.$t('ui.hide'),
+                    value: 'visibility',
+                    icon: item.isHidden ? 'unhidden-post' : 'hidden-post',
+                    onClick: () => this.toggleTagVisibility(item)
+                },
+                {
+                    separator: true
+                },
+                {
+                    label: this.$t('ui.delete'),
+                    value: 'delete',
+                    icon: 'trash',
+                    intent: 'danger',
+                    onClick: () => this.deleteTag(item)
+                }
+            ];
+        },
+        changeTagsState (itemsToChange, status, inverse = false) {
+            this.$store.commit('changeTagsVisibility', {
+                tagsIDs: itemsToChange,
+                status: status,
+                inverse: inverse
+            });
+
+            mainProcessAPI.send('app-tags-status-change', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToChange,
+                "status": status,
+                "inverse": inverse
+            });
+
+            mainProcessAPI.receiveOnce('app-tags-status-changed', () => {
+                this.selectedItems = [];
+                this.$forceUpdate();
+            });
+
+            this.$bus.$emit('message-display', {
+                message: this.$t('tag.tagStatusChangeSuccessMessage'),
+                type: 'success',
+                lifeTime: 3
+            });
+        },
+        deleteSelected () {
+            this.deleteTags(this.getSelectedItems());
+        },
+        deleteTags (itemsToRemove) {
+            mainProcessAPI.send('app-tag-delete', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToRemove
+            });
+
+            mainProcessAPI.receiveOnce('app-tag-deleted', () => {
+                this.$store.commit('removeTags', itemsToRemove);
+                this.selectedItems = [];
+
+                this.$bus.$emit('message-display', {
+                    message: this.$t('tag.removeTagSuccessMessage'),
+                    type: 'success',
+                    lifeTime: 3
+                });
+            });
+        },
+        showPostsConnectedWithTag (name) {
+            let siteName = this.$store.state.currentSite.config.name;
+            localStorage.setItem('publii-posts-search-value', 'tag:' + name);
+            this.$router.push('/site/' + siteName + '/posts');
+        },
+        saveOrdering (orderBy, order) {
+            this.orderBy = orderBy;
+            this.order = order;
+
+            this.$store.commit('setOrdering', {
+                type: 'tags',
+                orderBy: this.orderBy,
+                order: this.order
+            });
+        }
+    },
+    beforeDestroy () {
+        this.loadMoreObserver.disconnect();
+        this.$bus.$off('tags-filter-value-changed');
+        this.$bus.$off('hide-tag-item-editor');
+        this.$bus.$off('show-tag-item-editor');
+    }
+}
+</script>
+
+<style scoped>
+@import "../css/collection-page.css";
+@import '../css/content-status-icon.css';
+@import "../css/collection-sorting.css";
+
+.load-more-sentinel {
+    grid-column: 1 / -1;
+    height: 1px;
+}
+
+.content {
+    overflow-x: hidden!important;
+
+    &.no-scroll {
+        overflow: hidden!important;
+    }
+
+    .header {
+        .col {
+             align-items: center;
+             display: flex;
+
+             .col-sortable-title {
+                 cursor: pointer;
+             }
+        }
+    }
+
+    .tag-slug {
+        color: var(--color-text-muted);
+        font-size: 11px;
+        margin-top: .2rem;
+    }
+}
+
+.col > a > .icon {
+    margin-left: 10px;
+    position: relative;
+    top: 2px;
+}
+/* Status icons inside links must receive hover despite the global SVG rule. */
+.title .tag-status-icon {
+    pointer-events: bounding-box;
+}
+
+.title > a:focus-visible {
+    outline: 2px solid var(--input-border-focus);
+    outline-offset: 2px;
+}
+</style>

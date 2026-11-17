@@ -1,0 +1,105 @@
+<template>
+    <ordered-select
+        ref="dropdown"
+        :class="'pages-dropdown ' + customCssClasses.replace(/[^a-z0-9\-\_\s]/gmi, '')"
+        :id="anchor"
+        :options="pages"
+        :options-limit="100"
+        v-model="selectedPage"
+        :custom-label="pageLabels"
+        :close-on-select="true"
+        :show-labels="false"
+        :multiple="multiple"
+        @select="closeDropdown()"
+        :placeholder="placeholder"></ordered-select>
+</template>
+
+<script>
+import OrderedSelect from './OrderedSelect.vue';
+
+export default {
+    components: {
+        OrderedSelect
+    },
+    name: 'pages-dropdown',
+    props: {
+        multiple: {
+            type: Boolean,
+            default: false
+        },
+        anchor: {
+            default: '',
+            type: String
+        },
+        value: {},
+        customCssClasses: {
+            default: '',
+            type: String
+        }
+    },
+    data () {
+        return {
+            selectedPage: ''
+        };
+    },
+    computed: {
+        pages () {
+            return [''].concat(this.$store.state.currentSite.pages.slice().sort((a, b) => {
+                return a.title.localeCompare(b.title);
+            }).map(page => page.id));
+        },
+        placeholder () {
+            return this.$t('page.selectPage');
+        },
+        pageTitlesById () {
+            let map = new Map();
+
+            for (let page of this.$store.state.currentSite.pages) {
+                map.set(page.id, page.title);
+            }
+
+            return map;
+        }
+    },
+    watch: {
+        value: function (newValue, oldValue) {
+            this.selectedPage = newValue;
+        },
+        selectedPage: function (newValue, oldValue) {
+            this.$emit('input', newValue);
+        }
+    },
+    mounted () {
+        if (this.value) {
+            this.selectedPage = this.value;
+        }
+    },
+    methods: {
+        pageLabels (value) {
+            return this.pageTitlesById.get(value);
+        },
+        closeDropdown () {
+            this.$refs['dropdown'].deactivate();
+        }
+    }
+}
+</script>
+
+<style>
+.multiselect {
+    line-height: 2;
+}
+
+.multiselect,
+.multiselect__tags {
+    min-height: 49px;
+}
+
+.multiselect__tags {
+    padding: 0 var(--space-16) 0 1.8rem;
+}
+
+.pages-dropdown .multiselect__input {
+    max-width: 100%;
+}
+</style>

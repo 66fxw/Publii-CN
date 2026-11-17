@@ -1,0 +1,386 @@
+'use strict';
+
+const electron = require('electron');
+const webContents = electron.webContents;
+const BrowserWindow = electron.BrowserWindow;
+const Menu = electron.Menu;
+const electronApp = electron.app;
+const dialog = electron.dialog;
+const ipcMain = electron.ipcMain;
+const nativeTheme = electron.nativeTheme;
+const os = require('os');
+const App = require('./back-end/app.js');
+const { ApplicationMenuController } = require('./back-end/application-menu.js');
+const createSlug = require('./back-end/helpers/slug.js');
+const ContextMenuBuilder = require('./back-end/helpers/context-menu-builder.js');
+const DialogsState = require('./back-end/helpers/dialogs-state.js');
+const fs = require('fs');
+const path = require('path');
+const crypto = require('crypto');
+const normalizePath = require('normalize-path');
+
+// Wrapper to handle UNC paths on Windows only
+function normalizePathPreserveUNC (pathToNormalize) {
+    if (process.platform !== 'win32' || typeof pathToNormalize !== 'string') {
+        return normalizePath(pathToNormalize);
+    }
+
+    let isUNC = /^[\\/]{2}/.test(pathToNormalize);
+    let normalized = normalizePath(pathToNormalize);
+
+    if (isUNC && normalized.charAt(0) === '/' && normalized.charAt(1) !== '/') {
+        normalized = '/' + normalized;
+    }
+
+    return normalized;
+}
+
+if (typeof process.env.NODE_ENV === 'undefined') {
+    process.env.NODE_ENV = electronApp.isPackaged ? 'production' : 'development';
+}
+
+// Keep a global reference of the app instance for avoiding Garbage Collector
+let appInstance;
+let applicationMenu;
+let dialogsState;
+
+// Website locks live in the memory of a single process, so a second Publii process could modify a website
+// which is already open. Another launch brings the running app to the front instead - more windows are
+// available from the File menu. Development builds share the app name (and thus the lock) with the installed
+// app, so they skip the lock unless PUBLII_SINGLE_INSTANCE=1 is set.
+const useSingleInstanceLock = electronApp.isPackaged || process.env.PUBLII_SINGLE_INSTANCE === '1';
+const isPrimaryInstance = !useSingleInstanceLock || electronApp.requestSingleInstanceLock();
+
+if (!isPrimaryInstance) {
+    electronApp.quit();
+}
+
+electronApp.on('second-instance', function () {
+    // The running instance may still be starting - its first window is about to appear anyway
+    if (appInstance) {
+        appInstance.handleSecondInstance();
+    }
+});
+
+electronApp.on('window-all-closed', function () {
+    if (process.platform !== 'darwin') {
+        electronApp.quit();
+    }
+});
+
+electronApp.on('activate', function () {
+    if (BrowserWindow.getAllWindows().length === 0 && appInstance) {
+        appInstance.reopenMainWindow();
+    }
+});
+
+electronApp.on('ready', function () {
+    // Quitting is not immediate, so make sure that a secondary instance never touches the config and websites
+    if (!isPrimaryInstance) {
+        return;
+    }
+
+    // Start the app
+    let startupSettings = {
+        'app': electronApp,
+        'basedir': __dirname,
+        'isOnlyInstance': useSingleInstanceLock
+    };
+
+    appInstance = new App(startupSettings);
+    dialogsState = new DialogsState(path.join(appInstance.appDir, 'config'));
+    applicationMenu = new ApplicationMenuController({
+        app: electronApp,
+        Menu: Menu,
+        BrowserWindow: BrowserWindow,
+        shell: electron.shell,
+        ipcMain: ipcMain,
+        appInstance: appInstance,
+        isDevelopment: process.env.NODE_ENV !== 'production'
+    });
+    applicationMenu.install();
+    
+    ipcMain.on('publii-set-spellchecker-language', (event, language) => {
+        global.spellCheckerLanguage = new String(language).replace(/[^a-z\-_]/gmi, '');
+    });
+
+    ipcMain.handle('publii-shell-show-item-in-folder', (event, url) => electron.shell.showItemInFolder(url));
+
+    const blockedExtensions = new Set([
+        // Windows
+        '.exe', '.bat', '.cmd', '.com', '.msi', '.msp', '.scr', '.lnk', '.reg',
+        '.ps1', '.psm1', '.psd1', '.ps1xml', '.psc1',
+        '.vbs', '.vbe', '.wsf', '.wsh', '.js', '.jse', '.hta', '.cpl',
+        // macOS
+        '.app', '.command', '.scpt', '.tool',
+        // Unix
+        '.sh', '.bash', '.zsh', '.fish', '.csh', '.tcsh', '.ksh',
+        // Other
+        '.jar', '.py', '.pyc', '.pyw', '.rb', '.pl', '.php'
+    ]);
+
+    const allowedSubdirs = ['root-files', 'media'];
+
+    ipcMain.handle('publii-shell-open-path', (event, filePath) => {
+        if (typeof filePath !== 'string' || !filePath) {
+            return '';
+        }
+
+        let sitesDir = appInstance && appInstance.sitesDir;
+
+        if (!sitesDir) {
+            return '';
+        }
+
+        let resolvedSitesDir = path.resolve(sitesDir);
+        let resolvedTarget = path.resolve(filePath);
+        let relative = path.relative(resolvedSitesDir, resolvedTarget);
+
+        if (relative.startsWith('..') || path.isAbsolute(relative) || relative === '') {
+            return '';
+        }
+
+        let segments = relative.split(path.sep);
+
+        if (segments.length < 4 ||
+            segments[1] !== 'input' ||
+            allowedSubdirs.indexOf(segments[2]) === -1) {
+            return '';
+        }
+
+        let ext = path.extname(resolvedTarget).toLowerCase();
+
+        if (blockedExtensions.has(ext)) {
+            return '';
+        }
+
+        return electron.shell.openPath(resolvedTarget);
+    });
+
+    const ALLOWED_EXTERNAL_PROTOCOLS = new Set([
+        'http:',
+        'https:',
+        'mailto:',
+        'file:',
+        'dat:',
+        'ipfs:',
+        'dweb:'
+    ]);
+
+    ipcMain.handle('publii-shell-open-external', (event, url) => {
+        if (typeof url !== 'string' || !url) {
+            return;
+        }
+
+        let parsed;
+
+        try {
+            parsed = new URL(url);
+        } catch (e) {
+            return;
+        }
+
+        if (!ALLOWED_EXTERNAL_PROTOCOLS.has(parsed.protocol)) {
+            return;
+        }
+
+        if (parsed.protocol === 'file:') {
+            if (parsed.host) {
+                return;
+            }
+
+            let decodedPath;
+
+            try {
+                decodedPath = decodeURIComponent(parsed.pathname);
+            } catch (e) {
+                return;
+            }
+
+            if (path.extname(decodedPath).toLowerCase() !== '.html') {
+                return;
+            }
+        }
+
+        return electron.shell.openExternal(parsed.href);
+    });
+
+    ipcMain.handle('publii-native-exists-sync', (event, pathToCheck) => fs.existsSync(pathToCheck));
+    ipcMain.handle('publii-native-md5', (event, value) => crypto.createHash('md5').update(value).digest('hex'));
+    ipcMain.handle('publii-native-normalize-path', (event, pathToNormalize) => normalizePathPreserveUNC(pathToNormalize));
+    ipcMain.handle('publii-get-spellchecker-language', (event) => global.spellCheckerLanguage);
+    ipcMain.handle('app-main-webview-search-find-in-page', (event, searchPhrase, searchConfig = null) => {
+        if (searchConfig) {
+            event.sender.findInPage(searchPhrase, searchConfig);
+        } else {
+            event.sender.findInPage(searchPhrase);
+        }
+    });
+
+    ipcMain.handle('app-main-webview-search-stop-find-in-page', (event) => {
+        event.sender.stopFindInPage('clearSelection');
+    });
+
+    // App theme mode
+    ipcMain.handle('app-theme-mode:set-light', () => {
+        nativeTheme.themeSource = 'light';
+    });
+
+    ipcMain.handle('app-theme-mode:set-dark', () => {
+        nativeTheme.themeSource = 'dark';
+    });
+
+    ipcMain.handle('app-theme-mode:get-theme', () => {
+        return nativeTheme.shouldUseDarkColors ? 'dark' : 'default';
+    });
+
+    ipcMain.handle('app-theme-mode:set-system', () => {
+        nativeTheme.themeSource = 'system';
+    });
+
+    nativeTheme.on('updated', () => {
+        BrowserWindow.getAllWindows().forEach(win => {
+            win.webContents.send('app-theme-mode:changed');
+        });
+    });
+
+    // App window
+    ipcMain.handle('app-window:minimize', (event) => {
+        BrowserWindow.fromWebContents(event.sender)?.minimize();
+    });
+
+    ipcMain.handle('app-window:maximize', (event) => {
+        BrowserWindow.fromWebContents(event.sender)?.maximize();
+    });
+
+    ipcMain.handle('app-window:unmaximize', (event) => {
+        BrowserWindow.fromWebContents(event.sender)?.unmaximize();
+    });
+
+    ipcMain.handle('app-window:close', (event) => {
+        BrowserWindow.fromWebContents(event.sender)?.close();
+    });
+
+    // Use Electron API to create slugs
+    ipcMain.handle('app-main-process-create-slug', (event, input) => {
+        return createSlug(input);
+    });
+
+    // Export OS version
+    ipcMain.handle('app-main-process-is-osx11-or-higher', () => {
+        let version = parseInt(os.release().split('.')[0], 10);
+        
+        if (process.platform === 'darwin' && version >= 20) {
+            return true;
+        }
+
+        return false;
+    });
+
+    // Use Electron API to display directory selection dialog
+    ipcMain.handle('app-main-process-select-directory', (event, fieldName = false) => {
+        let win = BrowserWindow.fromWebContents(event.sender);
+
+        dialog.showOpenDialog(win, {
+            properties: ['openDirectory'],
+            defaultPath: dialogsState.getLastDirectory('directory')
+        }).then(selectedPath => {
+            dialogsState.rememberDirectoryFromResult('directory', selectedPath, true);
+
+            event.sender.send('app-directory-selected', {
+                path: selectedPath,
+                fieldName: fieldName
+            });
+        });
+    });
+
+    // Use Electron API to display file selection dialog
+    ipcMain.handle('app-main-process-select-file', (event, fieldName = false) => {
+        let win = BrowserWindow.fromWebContents(event.sender);
+
+        dialog.showOpenDialog(win, {
+            properties: ['openFile', 'showHiddenFiles'],
+            defaultPath: dialogsState.getLastDirectory('file')
+        }).then(selectedPath => {
+            dialogsState.rememberDirectoryFromResult('file', selectedPath);
+
+            event.sender.send('app-file-selected', {
+                path: selectedPath,
+                fieldName: fieldName
+            });
+        });
+    });
+
+    // Use Electron API to display files selection dialog
+    ipcMain.handle('app-main-process-select-files', (event, fieldName = false, filters = [], options = {}) => {
+        let win = BrowserWindow.fromWebContents(event.sender);
+
+        const selection = dialog.showOpenDialog(win, {
+            properties: options.returnResult === true && options.multiple === false ? ['openFile'] : ['openFile', 'multiSelections'],
+            filters: filters,
+            defaultPath: dialogsState.getLastDirectory('files')
+        }).then(selectedPaths => {
+            dialogsState.rememberDirectoryFromResult('files', selectedPaths);
+            return selectedPaths;
+        });
+        // Existing uploaders retain their event-based contract. FileManager opts
+        // into a direct result so opening another picker cannot start its queue.
+        if (options.returnResult === true) return selection;
+        selection.then(selectedPaths => {
+            event.sender.send('app-files-selected', {
+                paths: selectedPaths,
+                fieldName: fieldName
+            });
+        });
+    });
+
+    // Get available spellchecker languages
+    ipcMain.handle('app-main-get-spellchecker-languages', (event) => event.sender.session.availableSpellCheckerLanguages);
+
+    // Load language translations and set language as used in the app
+    ipcMain.handle('app-main-load-language', (event, lang, type) => {
+        if (typeof lang !== 'string' ||
+            lang.length === 0 ||
+            lang === '.' ||
+            lang === '..' ||
+            lang.startsWith('.') ||
+            !/^[a-zA-Z0-9\-_.]+$/.test(lang)) {
+            return false;
+        }
+
+        if (type !== 'default' && type !== 'installed') {
+            return false;
+        }
+
+        try {
+            appInstance.loadLanguage(lang, type);
+            let languageChanged = false;
+            
+            if (!appInstance.languageLoadingError) {
+                languageChanged = appInstance.setLanguage(lang, type);
+            }
+
+            applicationMenu.rebuild();
+
+            let result = {
+                languageChanged: languageChanged,
+                lang: appInstance.currentLanguageName,
+                type: appInstance.currentLanguageType,
+                translations: appInstance.currentLanguageTranslations,
+                momentLocale: appInstance.currentLanguageMomentLocale,
+                wysiwygTranslation: appInstance.currentWysiwygTranslation,
+                languageLoadingError: appInstance.languageLoadingError
+            };
+
+            // Other windows switch to the new language too. Otherwise they would keep the previous one
+            // in their copy of the app config and bring it back while saving the app settings.
+            if (languageChanged) {
+                appInstance.windowManager.broadcast('app-language-updated', result, event.sender.id);
+            }
+
+            return result;
+        } catch (error) {
+            return false;
+        }
+    });
+});

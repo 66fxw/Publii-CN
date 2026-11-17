@@ -1,0 +1,1418 @@
+<template>
+    <section
+        class="collection-page"
+        :class="{
+            'content': true,
+            'hierarchy-mode-enabled': hierarchyMode
+        }">
+        <div
+            v-if="hasPages"
+            class="collection-page-header">
+            <p-header
+                :title="$t('ui.pages')">
+                <header-search
+                    :inert="hierarchyMode ? '' : null"
+                    slot="search"
+                    ref="search"
+                    :placeholder="$t('page.filterOrSearchPages')"
+                    onChangeEventName="pages-filter-value-changed" />
+
+                <btn-dropdown
+                    :inert="hierarchyMode ? '' : null"
+                    slot="buttons"
+                    intent="primary"
+                    localStorageKey="publii-current-page-editor"
+                    :previewIcon="true"
+                    :items="dropdownItems"
+                    defaultValue="tinymce" />
+            </p-header>
+
+            <div
+                v-if="dataLoaded && hasPages"
+                class="filters collection-filters"
+                role="group"
+                :aria-label="$t('page.status')">
+                <collection-filter-button
+                    :label="$t('page.all')"
+                    :count="counters.all"
+                    :active="isFilterActive('all')"
+                    class="filter-all"
+                    :disabled="hierarchyMode"
+                    @click="setFilter('')" />
+
+                <collection-filter-button
+                    :label="$t('page.published')"
+                    :count="counters.published"
+                    :active="isFilterActive('published')"
+                    :disabled="hierarchyMode"
+                    @click="setFilter('is:published')" />
+
+                <collection-filter-button
+                    v-if="counters.drafts"
+                    :label="$t('page.drafts')"
+                    :count="counters.drafts"
+                    :active="isFilterActive('draft')"
+                    :disabled="hierarchyMode"
+                    @click="setFilter('is:draft')" />
+
+                <collection-filter-button
+                    v-if="counters.trashed"
+                    :label="$t('page.trashed')"
+                    :count="counters.trashed"
+                    :active="isFilterActive('trashed')"
+                    :disabled="hierarchyMode"
+                    @click="setFilter('is:trashed')" />
+
+                <div
+                    :class="{
+                       'filter-value': true,
+                       'is-hierarchy': true,
+                       'is-hierarchy-active': !!hierarchyMode
+                    }">
+                    <a
+                        href="#"
+                        class="edit-page-hierarchy"
+                        @click.prevent="toggleHierarchyMode">
+                        <icon
+                            name="hierarchy"
+                            size="s" />
+                        {{ hierarchyMode ? $t('page.closeHierarchy') : $t('page.editHierarchy') }}
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <collection
+            v-if="dataLoaded && !emptySearchResults && hasPages"
+            :columns="showModificationDate && showModificationDateAsColumn ? 6 : 5">
+            <collection-header slot="header">
+                <collection-cell>
+                    <checkbox
+                        :aria-label="$t('ui.selectAllVisibleItems')"
+                        value="all"
+                        :checked="allVisibleSelected"
+                        :indeterminate="someVisibleSelected"
+                        :disabled="hierarchyMode"
+                        :onClick="toggleAllCheckboxes"
+                        @click.native="$bus.$emit('document-body-clicked')" />
+                </collection-cell>
+
+                <collection-cell>
+                    <collection-sort-button
+                        :label="$t('page.title')"
+                        :active="orderBy === 'title'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('title')" />
+                </collection-cell>
+
+                <collection-cell>
+                    <collection-sort-button
+                        :label="$t('page.publicationDate')"
+                        :active="orderBy === 'created'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('created')" />
+                </collection-cell>
+
+                <collection-cell
+                    v-if="showModificationDate && showModificationDateAsColumn">
+                    <collection-sort-button
+                        :label="$t('page.modificationDate')"
+                        :active="orderBy === 'modified'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('modified')" />
+                </collection-cell>
+
+                <collection-cell min-width="110px">
+                    <collection-sort-button
+                        :label="$t('author.author')"
+                        :active="orderBy === 'author'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('author')" />
+                </collection-cell>
+
+                <collection-cell variant="identifier">
+                    <collection-sort-button
+                        :label="$t('ui.id')"
+                        :active="orderBy === 'id'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('id')" />
+                </collection-cell>
+
+                <div
+                    v-if="anyCheckboxIsSelected"
+                    class="tools">
+                    <p-button
+                        v-if="trashVisible"
+                        icon="delete"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkDelete">
+                        {{ $t('ui.delete') }}
+                    </p-button>
+
+                    <p-button
+                        v-if="trashVisible"
+                        icon="restore"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkRestore">
+                        {{ $t('file.restore') }}
+                    </p-button>
+
+                    <p-button
+                        v-if="!trashVisible"
+                        icon="trash"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkTrash">
+                        {{ $t('page.moveToTrash') }}
+                    </p-button>
+
+                    <p-button
+                        v-if="!trashVisible"
+                        icon="duplicate"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkDuplicate">
+                        {{ $t('page.duplicate') }}
+                    </p-button>
+
+                    <action-menu
+                        v-if="!trashVisible"
+                        align="left"
+                        text-size="medium"
+                        :label="$t('ui.more')"
+                        :items="bulkActions">
+                        <template #trigger="{ attrs, isOpen, toggle, keydown }">
+                            <p-button
+                                v-bind="attrs"
+                                icon="more"
+                                appearance="light"
+                                size="small"
+                                :active="isOpen"
+                                @click.native.stop="toggle"
+                                @keydown.native="keydown">
+                                {{ $t('ui.more') }}
+                            </p-button>
+                        </template>
+                    </action-menu>
+                </div>
+            </collection-header>
+
+            <collection-row
+                v-for="item in renderedItems"
+                slot="content"
+                :data-is-draft="item.isDraft"
+                :key="'collection-row-' + item.id">
+                <collection-cell>
+                    <checkbox
+                        :aria-label="$t('ui.selectItem', { name: item.title })"
+                        :value="item.id"
+                        :checked="isChecked(item.id)"
+                        :disabled="hierarchyMode"
+                        :onClick="toggleSelection"
+                        :key="'collection-row-checkbox-' + item.id" />
+                </collection-cell>
+
+                <collection-cell
+                    variant="titles"
+                    :style="'--item-depth: ' + (item.depth || 0)"
+                    :data-item-depth="item.depth || 0">
+
+                    <template v-if="item.depth > 0">
+                        <span class="collection-nested-arrow"></span>
+                    </template>
+
+                    <h2 :class="{
+                        'title': true,
+                        'is-homepage': homepageID === item.id
+                    }"> 
+                        <a
+                            v-tooltip.focus="item.isDraft ? $t('page.thisPageIsADraft') : ''"
+                            href="#"
+                            :aria-disabled="hierarchyMode ? 'true' : null"
+                            :tabindex="hierarchyMode ? -1 : null"
+                            @click.prevent.stop="!hierarchyMode && editPage(item.id, item.editor)">
+
+                            {{ item.title }}
+
+                            <strong v-if="homepageID === item.id">
+                                &ndash; {{ $t('page.isHomepage') }}
+                            </strong>
+
+                            <icon
+                                v-if="item.isDraft"
+                                size="xs"
+                                name="draft-post"
+                                class="page-status-icon content-status-icon"
+                                v-tooltip.hover="$t('page.thisPageIsADraft')"
+                                aria-hidden="true"
+                                focusable="false" />
+                        </a>
+                    </h2>
+
+                    <div
+                        v-if="showPageSlugs && !hierarchyMode && !item.isTrashed && !item.isDraft"
+                        class="page-slug">
+                        {{ $t('page.url') }}: {{ item.fullSlug }}
+                    </div>
+
+                    <div v-if="hierarchyMode">
+                        <a
+                            v-if="!subpageSelected"
+                            :ref="'hierarchy-move-' + item.id"
+                            href="#"
+                            class="page-item-select"
+                            :title="$t('page.moveItem')"
+                            @click.prevent="selectItem(item.id)">
+                            {{ $t('page.moveItem') }}
+                        </a>
+                        
+                        <a
+                            v-if="subpageSelected && item.id === subpageSelected"
+                            :ref="'hierarchy-unselect-' + item.id"
+                            href="#"
+                            class="page-item-unselect"
+                            :title="$t('page.unselectItem')"
+                            @click.prevent="unselectItem()">
+                            <icon
+                                class="page-item-move-icon"
+                                customWidth="22"
+                                customHeight="22"
+                                name="sidebar-close"/> 
+                            {{ $t('page.unselectItem') }}
+                        </a>
+
+                        <span 
+                            v-if="subpageSelected && subpageSelected !== item.id && subpageSelectedChildren.indexOf(item.id) === -1"
+                            class="page-item-insert-actions">
+                            {{ $t('page.insertActions') }}:
+                        </span>
+
+                        <a
+                            v-if="subpageSelected && subpageSelected !== item.id && subpageSelectedChildren.indexOf(item.id) === -1"
+                            href="#"
+                            class="page-item-insert-before"
+                            :title="$t('page.insertBefore')"
+                            @click.prevent="moveSelectedItem('before', item.id)">
+                            <icon
+                                class="page-item-move-icon"
+                                size="xs"
+                                name="move-up"/> 
+                            {{ $t('page.insertBefore') }}
+                        </a>
+
+                        <a
+                            v-if="subpageSelected && subpageSelected !== item.id && subpageSelectedChildren.indexOf(item.id) === -1"
+                            href="#"
+                            class="page-item-insert-after"
+                            :title="$t('page.insertAfter')"
+                            @click.prevent="moveSelectedItem('after', item.id)">
+                            <icon
+                                class="page-item-move-icon"
+                                size="xs"
+                                name="move-down"/> 
+                            {{ $t('page.insertAfter') }}
+                        </a>
+
+                        <a
+                            v-if="subpageSelected && subpageSelected !== item.id && subpageSelectedChildren.indexOf(item.id) === -1"
+                            href="#"
+                            class="page-item-insert-as-child"
+                            :title="$t('page.insertAsChild')"
+                            @click.prevent="moveSelectedItem('child', item.id)">
+                            {{ $t('page.insertAsChild') }} 
+                        </a>
+                    </div>
+                </collection-cell>
+
+                <collection-cell
+                    variant="publish-dates">
+                    <span class="publish-date">{{ getCreationDate(item.created) }}</span>
+                    <span
+                        v-if="!showModificationDateAsColumn && showModificationDate"
+                        class="modify-date">
+                        {{ $t('ui.lastModified') }}: {{ getModificationDate(item.modified) }}
+                    </span>
+                </collection-cell>
+
+                <collection-cell
+                    v-if="showModificationDate && showModificationDateAsColumn"
+                    variant="modification-dates">
+                    <span class="modify-date">
+                        {{ getModificationDate(item.modified) }}
+                    </span>
+                </collection-cell>
+
+                <collection-cell
+                    variant="authors">
+                    <a
+                        href="#"
+                        @click.prevent.stop="setFilter('author:' + item.author)">
+                        {{ item.author }}
+                    </a>
+                </collection-cell>
+
+                <collection-cell variant="identifier">
+                    {{ item.id }}
+                </collection-cell>
+            </collection-row>
+
+            <div
+                v-if="items.length > renderLimit"
+                ref="loadMoreSentinel"
+                slot="content"
+                class="load-more-sentinel">
+            </div>
+        </collection>
+
+        <empty-state
+            v-if="emptySearchResults"
+            :description="$t('page.noPagesMatchingYourCriteria')">
+        </empty-state>
+
+        <editor-selection
+            v-if="dataLoaded && !hasPages"
+            content-type="page"
+            @select="addNewPage" />
+    </section>
+</template>
+
+<script>
+import CollectionSortButton from './basic-elements/CollectionSortButton.vue';
+import EditorSelection from './basic-elements/EditorSelection.vue';
+import CollectionFilterButton from './basic-elements/CollectionFilterButton.vue';
+import Tooltip from '../helpers/tooltip.js';
+import Vue from 'vue';
+import CollectionCheckboxes from './mixins/CollectionCheckboxes.js';
+import CollectionOrdering from './mixins/CollectionOrdering.js';
+
+export default {
+    components: {
+        CollectionSortButton,
+        EditorSelection,
+        CollectionFilterButton
+    },
+    directives: {
+        tooltip: Tooltip
+    },
+    name: 'pages',
+    mixins: [
+        CollectionOrdering,
+        CollectionCheckboxes
+    ],
+    data () {
+        return {
+            dataLoaded: false,
+            filterValue: '',
+            selectedItems: [],
+            pagesHierarchy: null,
+            hierarchyMode: false,
+            subpageSelected: false,
+            order: 'DESC',
+            orderBy: '',
+            subpageSelectedChildren: [],
+            renderLimit: 100
+        };
+    },
+    computed: {
+        bulkActions () {
+            return [
+                {
+                    value: 'publish',
+                    label: this.$t('page.publish'),
+                    icon: 'publish-post',
+                    visible: this.selectedPagesNeedsStatus('published'),
+                    onClick: this.bulkPublish
+                },
+                {
+                    value: 'draft',
+                    label: this.$t('page.markAsDraft'),
+                    icon: 'draft-post',
+                    visible: this.selectedPagesNeedsStatus('draft'),
+                    onClick: this.bulkUnpublish
+                },
+                {
+                    value: 'convert',
+                    label: this.$t('page.convertToPost'),
+                    icon: 'convert-to-page',
+                    onClick: this.bulkConvertToPost
+                }
+            ];
+        },
+        items () {
+            let items = this.$store.getters.sitePages(this.filterValue, this.orderBy, this.order);
+
+            if (this.filterValue !== '' || this.orderBy !== '') {
+                return items;
+            }
+
+            let itemsMap = new Map(items.map(item => [item.id, item]));
+            let flatItems = this.hierarchyFlatten();
+            let usedItems = [];
+
+            flatItems.forEach(flatItem => {
+                let item = itemsMap.get(flatItem.id);
+
+                if (!item) {
+                    return;
+                }
+
+                usedItems.push(flatItem.id);
+
+                if (item) {
+                    item.depth = flatItem.depth;
+                    item.parentIds = flatItem.parentIds;
+                    item.fullSlug = this.generateSlug(item, itemsMap);
+                }
+            });
+
+            let results = flatItems.map(flatItem => itemsMap.get(flatItem.id));
+
+            // restore items that are not in hierarchy
+            items.forEach(item => {
+                if (item && usedItems.indexOf(item.id) === -1) {
+                    item.depth = 0;
+                    item.parentIds = [];
+
+                    if (this.$store.state.currentSite.config.advanced.urls.cleanUrls) {
+                        item.fullSlug = `/` + item.slug;
+                    } else {
+                        item.fullSlug = `/${item.slug}.html`;
+                    }
+
+                    results.push(item);
+                }
+            });
+
+            return results.filter(item => !!item);
+        },
+        renderedItems () {
+            return this.items.slice(0, this.renderLimit);
+        },
+        hasPages () {
+            return this.$store.state.currentSite.pages && !!this.$store.state.currentSite.pages.length;
+        },
+        emptySearchResults () {
+            return this.filterValue !== '' && !this.items.length;
+        },
+        trashVisible () {
+            return this.filterValue.indexOf('is:trashed') > -1;
+        },
+        counters () {
+            let counters = {
+                all: 0,
+                published: 0,
+                drafts: 0,
+                trashed: 0
+            };
+
+            if(!this.$store.state.currentSite || !this.$store.state.currentSite.pages) {
+                return counters;
+            }
+
+            for (let page of this.$store.state.currentSite.pages) {
+                if (page.status.indexOf('trashed') > -1) {
+                    counters.trashed++;
+                    continue;
+                }
+
+                counters.all++;
+
+                if (page.status.indexOf('draft') > -1) {
+                    counters.drafts++;
+                } else {
+                    counters.published++;
+                }
+            }
+
+            return counters;
+        },
+        showModificationDate () {
+            return this.$store.state.app.config.showModificationDate;
+        },
+        showModificationDateAsColumn () {
+            return this.$store.state.app.config.showModificationDateAsColumn;
+        },
+        dropdownItems () {
+            return [
+                {
+                    label: this.$t('page.editorWYSIWYGUse'),
+                    activeLabel: this.$t('page.addNewPage'),
+                    value: 'tinymce',
+                    icon: 'wysiwyg',
+                    isVisible: () => true,
+                    onClick: this.addNewPage.bind(this, 'tinymce')
+                },
+                {
+                    label: this.$t('page.editorBlockUse'),
+                    activeLabel: this.$t('page.addNewPage'),
+                    value: 'blockeditor',
+                    icon: 'block',
+                    isVisible: () => true,
+                    onClick: this.addNewPage.bind(this, 'blockeditor')
+                },
+                {
+                    label: this.$t('page.editorMarkdownUse'),
+                    activeLabel: this.$t('page.addNewPage'),
+                    value: 'markdown',
+                    icon: 'markdown',
+                    isVisible: () => true,
+                    onClick: this.addNewPage.bind(this, 'markdown')
+                }
+            ]
+        },
+        showPageSlugs () {
+            return this.$store.state.app.config.showPostSlugs;
+        },
+        homepageID () {
+            if (this.$store.state.currentSite.config.advanced.usePageAsFrontpage) {
+                return this.$store.state.currentSite.config.advanced.pageAsFrontpage;
+            }
+            
+            return false;
+        }
+    },
+    watch: {
+        filterValue () {
+            this.renderLimit = 100;
+        }
+    },
+    created () {
+        this.loadMoreObserver = new IntersectionObserver(entries => {
+            if (entries.some(entry => entry.isIntersecting)) {
+                this.renderLimit += 100;
+            }
+        });
+    },
+    mounted () {
+        this.orderBy = this.$store.state.ordering.pages.orderBy;
+        this.order = this.$store.state.ordering.pages.order;
+        this.$bus.$on('site-loaded', this.whenSiteLoaded);
+
+        this.$bus.$on('pages-filter-value-changed', (newValue) => {
+            this.filterValue = newValue.trim().toLowerCase();
+        });
+
+        // It is available when user comes from Tags/Authors views
+        let newFilterValue = localStorage.getItem('publii-pages-search-value');
+
+        if(newFilterValue) {
+            localStorage.removeItem('publii-pages-search-value');
+            setTimeout (() => {
+                this.setFilter(newFilterValue);
+            }, 0);
+        }
+
+        this.$bus.$on('site-switched', () => {
+            setTimeout(() => {
+                this.saveOrdering(this.$store.state.ordering.pages.orderBy, this.$store.state.ordering.pages.order);
+            }, 500);
+        });
+
+        this.$bus.$on('app-settings-saved', newSettings => {
+            if (this.orderBy + ' ' + this.order !== newSettings.pagesOrdering) {
+                let order = newSettings.pagesOrdering.split(' ');
+                this.saveOrdering(order[0], order[1]);
+            }
+        });
+
+        if (this.$store.state.currentSite.pages) {
+            this.dataLoaded = true;
+        }
+
+        if (this.$route.params.filter === 'trashed') {
+            this.setFilter('is:trashed');
+        }
+
+        mainProcessAPI.send('app-pages-hierarchy-load', this.$store.state.currentSite.config.name);
+
+        mainProcessAPI.receiveOnce('app-pages-hierarchy-loaded', (data) => {
+            if (!data) {
+                this.pagesHierarchy = this.$store.getters.sitePages(this.filterValue, this.orderBy, this.order)
+                                                            .map(item => ({id: item.id, subpages: []}));
+                this.hierarchySave();
+                return;
+            }
+
+            this.pagesHierarchy = JSON.parse(JSON.stringify(data));
+            this.checkHierarchyIntegrity();
+        });
+
+        this.checkPagesSupport();
+        this.$nextTick(this.observeLoadMoreSentinel);
+    },
+    updated () {
+        this.observeLoadMoreSentinel();
+    },
+    methods: {
+        observeLoadMoreSentinel () {
+            this.loadMoreObserver.disconnect();
+
+            if (this.$refs.loadMoreSentinel) {
+                this.loadMoreObserver.observe(this.$refs.loadMoreSentinel);
+            }
+        },
+        addNewPage (editorType) {
+            if (
+                editorType === 'blockeditor' &&
+                this.$store.state.currentSite.themeSettings &&
+                this.$store.state.currentSite.themeSettings.supportedFeatures &&
+                !this.$store.state.currentSite.themeSettings.supportedFeatures.blockEditor
+            ) {
+                this.$bus.$emit('confirm-display', {
+                    message: this.$t('page.editorBlockNotSupportedNewPageInfo'),
+                    okLabel: this.$t('page.openEditorAnyway'),
+                    isDanger: true,
+                    okClick: () => {
+                        this.openEditor(false, editorType);
+                    }
+                });
+                return;
+            }
+
+            this.openEditor(false, editorType);
+        },
+        editPage (id, editorType) {
+            if (
+                editorType === 'blockeditor' &&
+                this.$store.state.currentSite.themeSettings &&
+                this.$store.state.currentSite.themeSettings.supportedFeatures &&
+                !this.$store.state.currentSite.themeSettings.supportedFeatures.blockEditor
+            ) {
+                this.$bus.$emit('confirm-display', {
+                    message: this.$t('page.editorBlockNotSupportedEditPageInfo'),
+                    okLabel: this.$t('page.editPageAnyway'),
+                    isDanger: true,
+                    okClick: () => {
+                        this.openEditor(id, editorType);
+                    }
+                });
+                return;
+            }
+
+            this.openEditor(id, editorType);
+        },
+        openEditor (id, editorType) {
+            let siteName = this.$route.params.name;
+
+            if(this.filterValue.trim() !== '' && this.$store.state.app.config.alwaysSaveSearchState) {
+                localStorage.setItem('publii-pages-search-value', this.filterValue);
+            }
+
+            this.$store.commit('setEditorOpenState', true);
+            this.$router.push('/site/' + siteName + '/pages/editor/' + editorType + '/' + (id !== false ? id : ''));
+            return false;
+        },
+        setFilter (newValue) {
+            if (this.$refs.search) {
+                this.$refs.search.isOpen = newValue !== '';
+                this.$refs.search.value = newValue;
+                this.$refs.search.updateValue();
+            }
+        },
+        isFilterActive (type) {
+            return type === 'all'
+                ? this.filterValue.indexOf('is:') === -1
+                : this.filterValue.indexOf('is:' + type) === 0;
+        },
+        getModificationDate (timestamp) {
+            return this.$moment(timestamp).fromNow();
+        },
+        getCreationDate (timestamp) {
+            if(this.$store.state.app.config.timeFormat == 12) {
+                return this.$moment(timestamp).format('MMM DD, YYYY  hh:mm a');
+            } else {
+                return this.$moment(timestamp).format('MMM DD, YYYY  HH:mm');
+            }
+        },
+        bulkDelete () {
+            this.$bus.$emit('confirm-display', {
+                message: this.$t('page.removePageMessage'),
+                okLabel: this.$t('page.deletePages'),
+                isDanger: true,
+                okClick: this.deleteSelected
+            });
+        },
+        bulkConvertToPost () {
+            let itemsToChange = this.getSelectedItems();
+
+            this.$store.commit('changePagesToPosts', {
+                pageIDs: itemsToChange
+            });
+
+            mainProcessAPI.send('app-page-status-change', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToChange,
+                "status": 'is-page',
+                "inverse": true
+            });
+
+            this.updateHierarchyForConvertedPages(itemsToChange);
+            
+            mainProcessAPI.receiveOnce('app-page-status-changed', () => {
+                this.selectedItems = [];
+            });
+
+            this.$bus.$emit('message-display', {
+                message: this.$t('page.pageStatusChangeSuccessMessage'),
+                type: 'success',
+                lifeTime: 3
+            });
+        },
+        deleteSelected () {
+            let itemsToRemove = this.getSelectedItems();
+
+            mainProcessAPI.send('app-page-delete', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToRemove
+            });
+
+            mainProcessAPI.receiveOnce('app-page-deleted', () => {
+                this.$store.commit('removePages', itemsToRemove);
+                this.selectedItems = [];
+
+                this.$bus.$emit('message-display', {
+                    message: this.$t('page.removePageSuccessMessage'),
+                    type: 'success',
+                    lifeTime: 3
+                });
+
+                if (this.counters.trashed === 0) {
+                    this.filterValue = '';
+                }
+            });
+        },
+        bulkTrash () {
+            this.changeStateForSelected('trashed');
+        },
+        bulkPublish () {
+            this.changeStateForSelected('published');
+            this.changeStateForSelected('draft', true);
+        },
+        bulkUnpublish () {
+            this.changeStateForSelected('published', true);
+            this.changeStateForSelected('draft');
+        },
+        bulkDuplicate () {
+            let itemsToDuplicate = this.getSelectedItems();
+
+            mainProcessAPI.send('app-page-duplicate', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToDuplicate
+            });
+
+            mainProcessAPI.receiveOnce('app-page-duplicated', (data) => {
+                if(!data) {
+                    this.$bus.$emit('message-display', {
+                        message: this.$t('page.duplicatePageErrorMessage'),
+                        type: 'warning',
+                        lifeTime: 3
+                    });
+
+                    return;
+                } else {
+                    this.$bus.$emit('message-display', {
+                        message: this.$t('page.duplicatePageSuccessMessage'),
+                        type: 'success',
+                        lifeTime: 3
+                    });
+                }
+
+                this.selectedItems = [];
+
+                mainProcessAPI.send('app-site-reload', {
+                    siteName: this.$store.state.currentSite.config.name
+                });
+
+                mainProcessAPI.receiveOnce('app-site-reloaded', (result) => {
+                    this.$store.commit('setSiteConfig', result);
+                    this.$store.commit('switchSite', result.data);
+                    this.updateHierarchyForDuplicatedPages();
+                });
+            });
+        },
+        bulkRestore () {
+            this.changeStateForSelected('trashed', true);
+        },
+        changeStateForSelected (status, inverse = false) {
+            let itemsToChange = this.getSelectedItems();
+
+            this.$store.commit('changePagesStatus', {
+                pageIDs: itemsToChange,
+                status: status,
+                inverse: inverse
+            });
+
+            if (status === 'trashed' && !inverse) {
+                this.updateHierarchyForTrashedPages(itemsToChange);
+            } else if (status === 'trashed' && inverse) {
+                this.updateHierarchyForRestoredPages(itemsToChange);
+
+                // Skip to the "All" filter when trash is emptied
+                Vue.nextTick(() => {
+                    if (this.counters.trashed === 0) {
+                        this.filterValue = '';
+                        this.$refs['search'].close();
+                    }
+                });
+            }
+
+            mainProcessAPI.send('app-page-status-change', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToChange,
+                "status": status,
+                "inverse": inverse
+            });
+
+            mainProcessAPI.receiveOnce('app-page-status-changed', () => {
+                this.selectedItems = [];
+            });
+
+            this.$bus.$emit('message-display', {
+                message: this.$t('page.pageStatusChangeSuccessMessage'),
+                type: 'success',
+                lifeTime: 3
+            });
+        },
+        whenSiteLoaded () {
+            this.dataLoaded = true;
+
+            setTimeout(() => {
+                this.setFilter('');
+            }, 0);
+        },
+        saveOrdering (orderBy, order) {
+            this.orderBy = orderBy;
+            this.order = order;
+            this.$store.commit('setOrdering', {
+                type: 'pages',
+                orderBy: this.orderBy,
+                order: this.order
+            });
+        },
+        selectedPagesNeedsStatus (status) {
+            let selectedPages = this.items.filter(item => this.selectedItems.indexOf(item.id) > -1);
+
+            if (!selectedPages.length) {
+                return false;
+            }
+
+            let pagesWithoutGivenStatus = selectedPages.filter(item => item.status.indexOf(status) === -1);
+
+            return !!pagesWithoutGivenStatus.length;
+        },
+        selectedPagesHaveStatus (status) {
+            let selectedPages = this.items.filter(item => this.selectedItems.indexOf(item.id) > -1);
+
+            if (!selectedPages.length) {
+                return false;
+            }
+
+            let pagesWithGivenStatus = selectedPages.filter(item => item.status.indexOf(status) > -1);
+
+            return !!pagesWithGivenStatus.length;
+        },
+        toggleHierarchyMode () {
+            this.subpageSelected = false;
+            this.subpageSelectedChildren = [];
+            this.hierarchyMode = !this.hierarchyMode;  
+
+            if (this.hierarchyMode && !this.$store.state.currentSite.config.advanced.urls.cleanUrls) {
+                this.$bus.$emit('confirm-display', {
+                    hasInput: false,
+                    message: this.$t('page.cleanUrlsDisabled'),
+                    okClick: this.goToSettings,
+                    okLabel: this.$t('ui.enablePrettyURLs')
+                });
+            }
+
+            if (this.hierarchyMode) {
+                this.filterValue = '';
+                this.selectedItems = [];
+                this.orderBy = '';
+                this.order = 'DESC';
+                this.setFilter('');
+                this.saveOrdering(this.orderBy, this.order);
+            }
+        },
+        goToSettings () {
+            let siteName = this.$route.params.name;
+            this.$router.push('/site/' + siteName + '/settings/');
+        },
+        selectItem (id) {
+            this.subpageSelected = id;
+            this.subpageSelectedChildren = this.items.filter(item => item.parentIds.indexOf(id) > -1).map(item => item.id);
+            this.focusHierarchyAction(id, true);
+        },
+        unselectItem () {
+            const id = this.subpageSelected;
+            this.subpageSelected = false;
+            this.subpageSelectedChildren = [];
+            this.focusHierarchyAction(id, false);
+        },
+        focusHierarchyAction (id, selected) {
+            this.$nextTick(() => {
+                if (!this.hierarchyMode || this.subpageSelected !== (selected ? id : false)) {
+                    return;
+                }
+
+                const refs = this.$refs[(selected ? 'hierarchy-unselect-' : 'hierarchy-move-') + id];
+                const control = Array.isArray(refs) ? refs[0] : refs;
+
+                if (control && control.isConnected) {
+                    control.focus({ preventScroll: true });
+                }
+            });
+        },
+        findAndRemoveItem(pages, selectedItem) {
+            for (let i = 0; i < pages.length; i++) {
+                if (pages[i].id === selectedItem) {
+                    return pages.splice(i, 1)[0];
+                } else if (pages[i].subpages.length > 0) {
+                    let result = this.findAndRemoveItem(pages[i].subpages, selectedItem);
+                    
+                    if (result) {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        },
+        findItemAndParent(pages, id) {
+            for (let i = 0; i < pages.length; i++) {
+                if (pages[i].id === id) {
+                    return { 
+                        item: pages[i], 
+                        parent: pages 
+                    };
+                } else if (pages[i].subpages.length > 0) {
+                    let result = this.findItemAndParent(pages[i].subpages, id);
+                    
+                    if (result) {
+                        return result;
+                    }
+                }
+            }
+
+            return null;
+        },
+        moveSelectedItem (position, id) {
+            let selectedItem = this.findAndRemoveItem(this.pagesHierarchy, this.subpageSelected);
+            let target = this.findItemAndParent(this.pagesHierarchy, id);
+            let { item: targetItem, parent: targetParent } = target;
+
+            switch (position) {
+                case 'before': targetParent.splice(targetParent.indexOf(targetItem), 0, selectedItem); break;
+                case 'after': targetParent.splice(targetParent.indexOf(targetItem) + 1, 0, selectedItem); break;
+                case 'child': targetItem.subpages.push(selectedItem); break;
+                default: break;
+            }
+
+            this.hierarchySave();
+            this.unselectItem();
+        },
+        hierarchySave () {
+            mainProcessAPI.send('app-pages-hierarchy-save', {
+                siteName: this.$store.state.currentSite.config.name,
+                hierarchy: this.pagesHierarchy
+            });
+        },
+        hierarchyFlatten () {
+            let flatStructure = [];
+            let pagesHierarchy = JSON.parse(JSON.stringify(this.pagesHierarchy));
+            this.hierarchyRecursiveFlatten(flatStructure, pagesHierarchy);
+            return flatStructure;
+        },
+        hierarchyRecursiveFlatten (flatStructure, subpages, depth = 0, parentIds = []) {
+            if (!Array.isArray(subpages) || subpages.length === 0) {
+                return;
+            }
+
+            subpages.filter(subpage => !!subpage).forEach((page) => {
+                let currentSubpage = {
+                    id: page.id,
+                    depth: depth,
+                    parentIds: [...parentIds]
+                };
+                flatStructure.push(currentSubpage);
+
+                if (Array.isArray(page.subpages) && page.subpages.length > 0) {
+                    this.hierarchyRecursiveFlatten (flatStructure, page.subpages, depth + 1, [...parentIds, page.id]);
+                }
+            });
+        },
+        generateSlug (item, items) {
+            if (!item.parentIds || item.parentIds.length === 0 || !this.$store.state.currentSite.config.advanced.urls.cleanUrls) {
+                if (!this.$store.state.currentSite.config.advanced.urls.cleanUrls) {
+                    return `/${item.slug}.html`;
+                }
+
+                return `/${item.slug}`;
+            }
+
+            let slugs = [];
+            item.parentIds.forEach(parentId => {
+                let parentItem = items.get(parentId);
+
+                if (parentItem) {
+                    slugs.push(parentItem.slug);
+                }
+            });
+
+            return `/${slugs.join('/')}/${item.slug}`;
+        },
+        findAllChildrenIdsInItems (parentID) {
+            let children = this.hierarchyFlatten().filter(item => item.parentIds.indexOf(parentID) > -1);
+            let childrenIDs = children.map(child => child.id);
+            return childrenIDs;
+        },
+        updateHierarchyForRestoredPages (restoredPages) {
+            restoredPages.forEach(restoredPage => {
+                this.pagesHierarchy.push({ 
+                    id: restoredPage, 
+                    subpages: []
+                });
+                this.hierarchySave();
+            });
+        },
+        updateHierarchyForTrashedPages (trashedPages) {
+            let childrenIDs = trashedPages.map(trashedPage => this.findAllChildrenIdsInItems(trashedPage));
+            let childrenIDsFlat = childrenIDs.flat();
+            let childrenIDsUnique = [...new Set(childrenIDsFlat)];
+            let childrenToAdd = childrenIDsUnique.filter(childID => !trashedPages.includes(childID));
+
+            trashedPages.forEach(trashedPage => {
+                this.findAndRemoveItem(this.pagesHierarchy, trashedPage);
+            });
+
+            childrenToAdd.forEach(childID => {
+                this.pagesHierarchy.push({ 
+                    id: childID, 
+                    subpages: []
+                });
+            });
+        
+            this.hierarchySave();
+        },
+        updateHierarchyForPublishPages () {
+
+        },
+        updateHierarchyForDraftPages () {
+
+        },
+        updateHierarchyForDuplicatedPages () {
+            let rootHierarchyItems = this.pagesHierarchy.map(item => item.id);
+            let rootItems = this.items.filter(item => item.depth === 0).map(item => item.id);
+            let itemsToAdd = rootItems.filter(item => !rootHierarchyItems.includes(item));
+
+            itemsToAdd.forEach(item => {
+                this.pagesHierarchy.push({ 
+                    id: item, 
+                    subpages: []
+                });
+            });
+
+            this.hierarchySave();
+        },
+        checkPagesSupport () {
+            let sessionStorageName = this.$store.state.currentSite.config.name.replace(/[^a-z\-0-9]/gmi, '');
+
+            if (window.sessionStorage.getItem('pages-info-displayed-for-site-' + sessionStorageName)) {
+                return;
+            }
+
+            if (
+                !this.$store.state.currentSite.themeSettings.supportedFeatures ||
+                !this.$store.state.currentSite.themeSettings.supportedFeatures.pages
+            ) {
+                window.sessionStorage.setItem('pages-info-displayed-for-site-' + sessionStorageName, true);
+                this.$bus.$emit('confirm-display', {
+                    hasInput: false,
+                    message: this.$t('ui.pagesSupportNotEnabledMessage'),
+                    isDanger: true,
+                    okClick: () => false,
+                    cancelClick: this.checkWhatsChanged,
+                    okLabel: this.$t('ui.ok'),
+                    cancelLabel: this.$t('ui.learnMore'),
+                    cancelNotClosePopup: true
+                });
+            }
+        },
+        checkWhatsChanged () {
+            mainProcessAPI.shellOpenExternal('https://getpublii.com/dev/how-to-add-pages-support-to-your-theme/');
+        },
+        checkHierarchyIntegrity () {
+            let flatStructure = this.hierarchyFlatten();
+            let itemsMap = new Map(this.items.map(item => [item.id, item]));
+            let usedItems = [];
+
+            flatStructure.forEach(flatItem => {
+                let item = itemsMap.get(flatItem.id);
+
+                if (!item) {
+                    return;
+                }
+
+                usedItems.push(flatItem.id);
+            });
+
+            // find items that are not in hierarchy
+            this.items.forEach(item => {
+                if (usedItems.indexOf(item.id) === -1) {
+                    this.pagesHierarchy.push({ 
+                        id: item.id, 
+                        subpages: []
+                    });
+
+                    console.log('Add missing item to hierarchy', item.id);
+                }
+            });
+
+            this.hierarchySave();
+        },
+        updateHierarchyForConvertedPages (convertedPages) {
+            let childrenIDs = convertedPages.map(convertedPage => this.findAllChildrenIdsInItems(convertedPage));
+            let childrenIDsFlat = childrenIDs.flat();
+            let childrenIDsUnique = [...new Set(childrenIDsFlat)];
+            let childrenToAdd = childrenIDsUnique.filter(childID => !convertedPages.includes(childID));
+
+            convertedPages.forEach(convertedPage => {
+                let item = this.findAndRemoveItem(this.pagesHierarchy, convertedPage);
+
+                if (item) {
+                    this.hierarchySave();
+                }
+            });
+
+            childrenToAdd.forEach(childID => {
+                this.pagesHierarchy.push({ 
+                    id: childID, 
+                    subpages: []
+                });
+            });
+        
+            this.hierarchySave();
+        }
+    },
+    beforeDestroy () {
+        this.loadMoreObserver.disconnect();
+        this.$bus.$off('site-loaded', this.whenSiteLoaded);
+        this.$bus.$off('pages-filter-value-changed');
+    }
+}
+</script>
+
+<style scoped>
+@import "../css/collection-page.css";
+@import '../css/content-status-icon.css';
+@import "../css/collection-sorting.css";
+
+.load-more-sentinel {
+    grid-column: 1 / -1;
+    height: 1px;
+}
+
+.header {
+    .col {
+        align-items: center;
+        display: flex;
+
+        .col-sortable-title {
+            cursor: pointer;
+        }
+    }
+}
+
+.content.hierarchy-mode-enabled {
+    .heading {
+        .search,
+        ::v-deep .buttons {
+            filter: grayscale(1);
+            opacity: .5;
+            pointer-events: none;
+        }
+    }
+
+    .collection-wrapper {
+        input[type="checkbox"] {
+            pointer-events: none;
+        }
+    }
+
+    .col.titles .title {
+        pointer-events: none;
+
+        a {
+            color: var(--text-light-color);
+        }
+    }
+}
+
+.header {
+    overflow-y: visible!important;
+}
+
+.item {
+    .page-slug {
+        color: var(--color-text-muted);
+        font-size: 11px;
+        margin-top: .2rem;
+    }
+
+    .col.titles {
+        padding-left: calc(1.8rem + (2.4rem * var(--item-depth)));
+        position: relative;
+    }
+
+    .page-item-select,
+    .page-item-submenu,
+    .page-item-insert-before,
+    .page-item-insert-after,
+    .page-item-insert-as-child,
+    .page-item-unselect {
+        color: var(--link-primary-color);
+        display: inline-block;
+        font-size: var(--font-size-ui-md);
+        padding: 0 var(--space-2);
+
+        &:active,
+        &:focus,
+        &:hover {
+            color: var(--link-primary-color-hover);
+        }
+        
+    }
+
+    .page-item-select,
+    .page-item-unselect,
+    .page-item-insert-actions{
+        &:first-child {
+           padding-left: 0;
+        }
+    }
+
+    .page-item-insert-actions {
+        color: var(--text-light-color);
+        font-size: var(--font-size-ui-md);
+        padding: 0 var(--space-2);
+    }
+
+    .page-item-unselect {
+        color: var(--color-danger);
+        left: -9px;
+        position: relative;
+
+        & > svg {
+            fill: var(--color-danger);
+            position: relative;
+            left: -3px;
+            top: 3px;
+        }
+    }
+
+    .page-item-submenu,
+    .page-item-insert-before,
+    .page-item-insert-after {
+        padding-right: var(--space-4);
+        position: relative;
+
+        &::after {
+            background: var(--input-border-color);
+            content: "";
+            display: block;
+            height: 14px;
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translate(0, -50%);
+            width: 1px;
+        }
+    }
+
+    .page-item-move-icon {
+        vertical-align: text-bottom;
+    }
+}
+
+@import "../css/collection-filters.css";
+
+.filters {
+    .filter-value.is-hierarchy {
+        margin-left: auto;
+        margin-top: 4px;
+
+        a {
+            align-items: center;
+            display: inline-flex;
+            gap: 6px;
+        }
+    }
+
+    button.filter-value:disabled {
+        filter: grayscale(1);
+        opacity: 0.5;
+        pointer-events: none;
+    }
+
+    .filter-all::first-letter {
+        text-transform: capitalize;
+    }
+}
+
+
+.collection-nested-arrow {
+    display: block;
+    border-radius: 0 0 0 2px;
+    width: 11px; 
+    height: 8px;
+    border-left: 1px solid var(--color-border-strong);
+    border-bottom: 1px solid var(--color-border-strong);
+    position: absolute;
+    left: calc(-.6rem + (2.4rem * var(--item-depth)));
+    top: 50%;
+	transform: translate(0, -50%);
+}
+
+.edit-page-hierarchy-warning {
+    color: var(--color-danger);
+    padding-right: var(--space-4);
+    position: relative;
+    top: -4px;
+}
+
+/*
+ * Responsive improvements
+ */
+
+@media (max-width: 1300px) {
+    .item .page-item-insert-actions {
+        display: block;
+        padding-bottom: 0!important;
+    }
+    .item .page-item-insert-before {
+        margin-left: -4px;
+        padding-left: 0;
+    }
+}
+/* Status icons inside links must receive hover despite the global SVG rule. */
+.title .page-status-icon {
+    pointer-events: bounding-box;
+}
+
+.title > a:focus-visible {
+    outline: 2px solid var(--input-border-focus);
+    outline-offset: 2px;
+}
+</style>

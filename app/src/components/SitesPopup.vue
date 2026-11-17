@@ -1,0 +1,108 @@
+<template>
+    <div
+        :class="{ 'sites-popup': true, 'is-hidden': !isVisible }"
+        @click="hide">
+        <p-header @click.native.stop>
+            <p-button
+                appearance="clean"
+                back
+                slot="buttons"
+                :onClick="hide">
+                {{ $t('ui.goBack') }}
+            </p-button>
+
+            <p-button
+                icon="plus"
+                intent="primary"
+                slot="buttons"
+                :onClick="addNewWebsite">
+                {{ $t('site.addNewWebsite') }}
+            </p-button>
+        </p-header>
+        <div class="sites-popup-container" @click.stop>
+           <sites-search ref="search" />
+           <sites-list />
+        </div>
+    </div>
+</template>
+
+<script>
+import SitesSearch from './SitesSearch';
+import SitesList from './SitesList';
+
+export default {
+    name: 'sites-popup',
+    components: {
+        'sites-search': SitesSearch,
+        'sites-list': SitesList
+    },
+    data () {
+        return {
+            isVisible: false
+        }
+    },
+    mounted () {
+        this.$bus.$on('sites-popup-show', this.show);
+        this.$bus.$on('sites-popup-hide', this.hide);
+    },
+    methods: {
+        show (e) {
+            this.isVisible = true;
+
+            setTimeout(() => {
+                this.$refs['search'].$refs['search-input'].$refs['input'].value = '';
+                this.$refs['search'].$refs['search-input'].$refs['input'].focus();
+                this.$bus.$emit('sites-list-filtered', '');
+            }, 100);
+        },
+        hide () {
+            this.isVisible = false;
+        },
+        async addNewWebsite () {
+            await this.$router.push('/site/!');
+            await this.$nextTick();
+
+            await new Promise(resolve => {
+                requestAnimationFrame(() => {
+                    requestAnimationFrame(resolve);
+                });
+            });
+
+            if (this.$route.params.name === '!') {
+                this.isVisible = false;
+            }
+        }
+    },
+    beforeDestroy () {
+        this.$bus.$off('sites-popup-show', this.show);
+        this.$bus.$off('sites-popup-hide', this.hide);
+    }
+}
+</script>
+
+<style scoped>
+
+.sites-popup {
+    background: var(--bg-site);
+    height: 100vh;
+    left: 0;
+    opacity: 1;
+    padding: 4.4rem 3.2rem;
+    pointer-events: auto;
+    position: fixed;
+    top: 0;
+    transition: all .25s ease-out;
+    width: 100vw;
+    z-index: var(--layer-overlay);
+
+    &.is-hidden {
+        pointer-events: none;
+        opacity: 0;
+    }
+}
+
+.sites-popup-container {
+    margin: auto;
+    max-width: var(--wrapper-width);
+}
+</style>

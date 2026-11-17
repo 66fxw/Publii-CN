@@ -1,0 +1,60 @@
+.help-panel {
+    bottom: 0;
+    display: none;
+    padding: var(--space-6);
+    position: fixed;
+    right: 0;
+    top: 9.2rem;
+    width: var(--options-sidebar-width);
+    z-index: var(--layer-panel);
+
+    &.is-visible {
+        display: block;
+    }
+}
+
+body[data-os="linux"] .help-panel {
+    top: 5.6rem;
+}
+
+.help-panel-desc {
+    color: var(--text-light-color);
+    
+    span {
+        background: var(--input-border-color);
+        border-radius: 4px;
+        color: var(--text-primary-color);
+        padding: 2px 4px;
+    }
+}
+
+.help-panel-table {
+    border-collapse: collapse;   
+    margin-top: .6rem;
+    width: 100%;
+    
+    &.col-3 {
+        td {
+            width: auto !important;
+        } 
+    }
+    
+    th {
+        border-bottom: 1px solid var(--input-border-color); 
+        padding: 12px 14px;
+        text-align: left;
+    }
+    
+    td {            
+        border-bottom: 1px solid var(--input-border-color); 
+        border-right: 1px solid var(--input-border-color); 
+        padding: 12px 14px;
+        vertical-align: top;
+        white-space: normal;
+        width: 50%;
+        
+        &:last-child {
+            border-right: none;
+        }
+    }
+}

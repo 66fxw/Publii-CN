@@ -1,0 +1,869 @@
+<template>
+    <section class="settings site-settings-app">
+        <div class="settings-wrapper">
+            <p-header :title="$t('settings.appSettings')">
+                <p-button
+                    :onClick="goBack"
+                    appearance="clean"
+                    back
+                    slot="buttons">
+                    {{ $t('ui.goBack') }}
+                </p-button>
+
+                <p-button
+                    :onClick="checkBeforeSave"
+                    slot="buttons"
+                    :disabled="buttonsLocked">
+                    {{ $t('settings.saveSettings') }}
+                </p-button>
+            </p-header>
+
+            <fields-group :title="$t('settings.basicSettings')">
+                <field
+                    id="theme"
+                    :label="$t('settings.colorTheme')">
+                    <dropdown
+                        slot="field"
+                        id="start"
+                        v-model="theme"
+                        :items="availableColorSchemes"></dropdown>
+                </field>
+
+                <field
+                    id="start"
+                    :label="$t('settings.loadAtStart')">
+                    <dropdown
+                        slot="field"
+                        id="start"
+                        v-model="screensSelected"
+                        :items="screens"></dropdown>
+                </field>
+
+                <field
+                    id="time-format"
+                    :label="$t('settings.timeFormat')">
+                    <dropdown
+                        slot="field"
+                        id="time-format"
+                        :items="timeFormats"
+                        v-model="timeFormatsSelected"></dropdown>
+                </field>
+
+                <field
+                    id="images-resize-engine"
+                    :label="$t('settings.imagesResizeEngine')">
+                    <dropdown
+                        slot="field"
+                        id="images-resize-engine"
+                        :items="imageResizeEngines"
+                        v-model="imageResizeEnginesSelected"></dropdown>
+                    <small
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.imageResizeEngineInfo') }}
+                    </small>
+                </field>  
+                
+                <field
+                    id="app-ui-zoom-level"
+                    :label="$t('settings.appUIZoomLevel')">
+                    <range-slider
+                        :min="0.75"
+                        :max="2.5"
+                        :step="0.05"
+                        v-model="uiZoomLevel"
+                        :contentModifier="(value) => parseInt(value * 100.0, 10) + '%'"
+                        slot="field"></range-slider>
+                    <span
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.appUIZoomLevelInfo') }}
+                    </span>
+                </field>
+
+                <field
+                    id="auto-adjust-sidebar-width"
+                    :label="$t('settings.autoAdjustSidebarWidth')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="auto-adjust-sidebar-width"
+                        v-model="autoAdjustSidebarWidth"
+                        :accessibleLabel="$t('settings.autoAdjustSidebarWidth')"
+                        :description="$t('settings.autoAdjustSidebarWidthInfo')" />
+                    <span
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.autoAdjustSidebarWidthInfo') }}
+                    </span>
+                </field>
+
+                <field
+                    id="notifications-center-enabled"
+                    :label="$t('settings.notificationsCenterEnabled')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="notifications-center-enabled"
+                        v-model="notificationsStatus" />
+                </field>
+
+                <field
+                    id="always-save-search-state"
+                    :label="$t('settings.alwaysSaveSearchState')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="always-save-search-state"
+                        v-model="alwaysSaveSearchState" />
+                    <span
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.saveSearchStateInfo') }}
+                    </span>
+                </field>
+
+                <field
+                    id="show-modification-date"
+                    :label="$t('settings.showModificationDate')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="show-modification-date"
+                        v-model="showModificationDate" />
+                </field>
+                
+                <field
+                    v-if="showModificationDate"
+                    id="show-modification-date-as-column"
+                    :label="$t('settings.showModificationDateAsColumn')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="show-modification-date-as-column"
+                        v-model="showModificationDateAsColumn" />
+                </field>
+
+                <field
+                    id="show-post-slugs"
+                    :label="$t('settings.showPostSlugsOnTheListing')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="show-post-slugs"
+                        v-model="showPostSlugs" />
+                </field>
+
+                <field
+                    id="show-post-tags"
+                    :label="$t('settings.showPostTagsOnTheListing')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="show-post-tags"
+                        v-model="showPostTags" />
+                </field>
+
+                <field
+                    id="show-plugin-icons"
+                    :label="$t('settings.showPluginIconsOnTheListing')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="show-plugin-icons"
+                        v-model="showPluginIcons"
+                        :accessibleLabel="$t('settings.showPluginIconsOnTheListing')" />
+                </field>
+
+                <field
+                    id="wide-scrollbars"
+                    :label="$t('settings.useWideScrollbars')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="wide-scrollbars"
+                        v-model="wideScrollbars" />
+                </field>
+
+                <field
+                    id="show-tooltips"
+                    :label="$t('settings.showTooltips')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="show-tooltips"
+                        v-model="showTooltips"
+                        :accessibleLabel="$t('settings.showTooltips')" />
+                </field>
+            </fields-group>
+
+            <fields-group :title="$t('settings.filesLocation')">
+                <field
+                    id="sites-location"
+                    :label="$t('settings.sitesLocation')">
+                    <dir-select
+                        id="sites-location"
+                        :placeholder="$t('settings.leaveBlankToUseDefaultSitesDir')"
+                        v-model="locations.sites"
+                        :readonly="syncInProgress"
+                        slot="field" />
+                    <switcher
+                        v-if="originalSitesLocation !== locations.sites"
+                        slot="field"
+                        id="site-location-switcher"
+                        v-model="changeSitesLocationWithoutCopying"
+                        :label="$t('settings.changeSitesLocationWithoutCopyingFiles')" />
+                    <small
+                        v-if="syncInProgress"
+                        slot="note"
+                        class="note">
+                        {{ $t('sync.duringSyncYouCantChangeFilesLocation') }}
+                    </small>
+                    <small
+                        v-if="locations.sites !== '' && !sitesLocationExists"
+                        slot="note"
+                        class="note is-invalid">
+                        {{ $t('settings.selectedDirInvalid') }}
+                    </small>
+                </field>
+
+                <field
+                    id="backups-location"
+                    :label="$t('settings.backupLocation')">
+                    <dir-select
+                        id="backups-location"
+                        :placeholder="$t('settings.leaveBlankForDefaultBackupsDir')"
+                        v-model="locations.backups"
+                        :readonly="syncInProgress"
+                        slot="field" />
+                    <small
+                        v-if="syncInProgress"
+                        slot="note"
+                        class="note">
+                        {{ $t('sync.duringSyncYouCantChangeFilesLocation') }}
+                    </small>
+                    <small
+                        v-if="locations.backups !== '' && !backupsLocationExists"
+                        slot="note"
+                        class="note is-invalid">
+                        {{ $t('settings.selectedDirInvalid') }}
+                    </small>
+                </field>
+
+                <field
+                    id="previews-location"
+                    :label="$t('settings.previewsLocation')">
+                    <dir-select
+                        id="previews-location"
+                        :placeholder="$t('settings.leaveBlankForDefaultPreviewsDir')"
+                        v-model="locations.previews"
+                        slot="field" />
+                    <small
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.previewsLocationDesc') }}
+                    </small>
+                    <small
+                        v-if="locations.previews !== '' && !previewsLocationExists"
+                        slot="note"
+                        class="note is-invalid">
+                        {{ $t('settings.selectedDirInvalid') }}
+                    </small>
+                </field>
+            </fields-group>
+
+            <fields-group :title="$t('settings.defaultOrderingOnLists')">
+                <field
+                    id="posts-ordering"
+                    :label="$t('settings.defaultPostsOrdering')">
+                    <dropdown
+                        slot="field"
+                        id="posts-ordering"
+                        :items="orderingPostItems"
+                        v-model="postsOrdering"></dropdown>
+                </field>
+
+                <field
+                    id="pages-ordering"
+                    :label="$t('settings.defaultPagesOrdering')">
+                    <dropdown
+                        slot="field"
+                        id="pages-ordering"
+                        :items="orderingPageItems"
+                        v-model="pagesOrdering"></dropdown>
+                </field>
+
+                <field
+                    id="tags-ordering"
+                    :label="$t('settings.defaultTagsOrdering')">
+                    <dropdown
+                        slot="field"
+                        id="tags-ordering"
+                        :items="orderingTagItems"
+                        v-model="tagsOrdering"></dropdown>
+                </field>
+
+                <field
+                    id="authors-ordering"
+                    :label="$t('settings.defaultAuthorsOrdering')">
+                    <dropdown
+                        slot="field"
+                        id="authors-ordering"
+                        :items="orderingAuthorItems"
+                        v-model="authorsOrdering"></dropdown>
+                </field>
+            </fields-group>
+
+            <fields-group :title="$t('settings.optionsForEditors')">
+                <field
+                    id="editor-font-size"
+                    :label="$t('settings.editorFontSize')">
+                    <range-slider
+                        :min="18"
+                        :max="22"
+                        :step="1"
+                        v-model="editorFontSize"
+                        slot="field"></range-slider>
+                </field>
+
+                <field
+                    id="editor-font-family"
+                    :label="$t('settings.editorFontFamily')">
+                    <dropdown
+                        slot="field"
+                        id="editor-font-family"
+                        :items="editorFontFamilyItems"
+                        v-model="editorFontFamily"></dropdown>
+                </field>
+
+                 <field
+                    id="close-editor-on-save"
+                    :label="$t('settings.closePostEditorOnSave')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="close-editor-on-save"
+                        v-model="closeEditorOnSave" />
+                </field>
+            </fields-group>
+
+            <fields-group :title="$t('settings.optionsForDevelopers')">
+                <field
+                    id="open-devtools-in-main"
+                    :label="$t('settings.openDevtoolsInMainW')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="open-devtools-in-main"
+                        v-model="openDevToolsInMainWindow" />
+                        <span
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.requiresRestartingApp') }}
+                    </span>
+                </field>
+
+                <field
+                    id="devtools-mode"
+                    :label="$t('settings.devtoolsMode')">
+                    <dropdown
+                        slot="field"
+                        id="devtools-mode"
+                        :items="devToolsModes"
+                        v-model="devToolsMode"></dropdown>
+                    <small
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.requiresRestartingApp') }}
+                    </small>
+                </field>
+
+                <field
+                    id="use-local-preview-server"
+                    :label="$t('settings.useLocalPreviewServer')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="use-local-preview-server"
+                        v-model="previewServerEnabled" />
+                    <small
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.useLocalPreviewServerDesc') }}
+                    </small>
+                </field>
+
+                <field
+                    id="enable-advanced-preview"
+                    :label="$t('settings.enableAdvancedPreview')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="enable-advanced-preview"
+                        v-model="enableAdvancedPreview" />
+                    <small
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.advancedPreviewDesc') }}
+                    </small>
+                </field>
+            </fields-group>
+
+            <fields-group :title="$t('settings.optionsForExperimentalFeatures')">
+                 <div
+                    class="msg msg-icon msg-info">
+                    <icon
+                        name="warning"
+                        customWidth="28"
+                        customHeight="28" />
+                    <div v-pure-html="$t('settings.experimentalFeaturesWarning')"></div>
+                </div>
+                <field
+                    id="experimental-feature-app-ui-languages"
+                    :label="$t('settings.experimentalFeatureAppAutoBeautifySourceCode')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="experimental-feature-app-ui-languages"
+                        v-model="experimentalFeatureAppAutoBeautifySourceCode" />
+                    <small 
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.experimentalFeatureAppAutoBeautifySourceCodeDesc') }}
+                    </small>
+                </field>
+                <field
+                    id="experimental-feature-app-alt-ftp"
+                    :label="$t('settings.experimentalFeatureAppFtpAlt')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="experimental-feature-app-alt-ftp"
+                        v-model="experimentalFeatureAppFtpAlt" />
+                    <small 
+                        slot="note"
+                        class="note">
+                        {{ $t('settings.experimentalFeatureAppFtpAltDesc') }}
+                    </small>
+                </field>
+                <field
+                    id="experimental-feature-app-file-manager-in-sidebar"
+                    :label="$t('settings.experimentalFileManagerInSidebar')"
+                    :labelSeparated="false">
+                    <switcher
+                        slot="field"
+                        id="experimental-feature-app-file-manager-in-sidebar"
+                        v-model="experimentalFileManagerInSidebar" />
+                </field>
+            </fields-group>
+
+            <p-footer>
+                <p-button
+                    :onClick="checkBeforeSave"
+                    slot="buttons"
+                    :disabled="buttonsLocked">
+                    {{ $t('settings.saveSettings') }}
+                </p-button>
+            </p-footer>
+        </div>
+    </section>
+</template>
+
+<script>
+import { experimentalFileManagerInSidebar } from '../../config/AST.app.config.js';
+import Utils from './../helpers/utils.js';
+import GoToLastOpenedWebsite from './mixins/GoToLastOpenedWebsite';
+import Vue from 'vue';
+
+export default {
+    name: 'appsettings',
+    mixins: [
+        GoToLastOpenedWebsite
+    ],
+    data () {
+        return {
+            alwaysSaveSearchState: false,
+            buttonsLocked: false,
+            screensSelected: '',
+            timeFormatsSelected: '12',
+            imageResizeEnginesSelected: 'sharp',
+            uiZoomLevel: 1.0,
+            autoAdjustSidebarWidth: true,
+            openDevToolsInMainWindow: false,
+            devToolsMode: 'detach',
+            wideScrollbars: false,
+            showTooltips: true,
+            notificationsStatus: false,
+            closeEditorOnSave: true,
+            showModificationDate: true,
+            showModificationDateAsColumn: false,
+            showPostSlugs: false,
+            showPostTags: true,
+            showPluginIcons: true,
+            postsOrdering: 'id DESC',
+            pagesOrdering: ' DESC',
+            tagsOrdering: 'id DESC',
+            authorsOrdering: 'id DESC',
+            originalSitesLocation: '',
+            theme: 'default',
+            enableAdvancedPreview: false,
+            previewServerEnabled: true,
+            locations: {
+                sites: '',
+                backups: '',
+                previews: ''
+            },
+            unwatchBackupsLocation: null,
+            unwatchPreviewsLocation: null,
+            editorFontSize: 18,
+            editorFontFamily: 'serif',
+            experimentalFeatureAppAutoBeautifySourceCode: false,
+            experimentalFeatureAppFtpAlt: false,
+            experimentalFileManagerInSidebar: false,
+            changeSitesLocationWithoutCopying: false,
+            // Assumed valid until the check of the selected folder is done - otherwise the note would blink after opening
+            sitesLocationExists: true,
+            backupsLocationExists: true,
+            previewsLocationExists: true
+        };
+    },
+    computed: {
+        screens () {
+            let websites = this.$store.getters.siteDisplayNames;
+
+            return {
+                '': this.$t('settings.openLastUsedWebsite'),
+                ...websites
+            };
+        },
+        availableColorSchemes () {
+            return {
+                'system': this.$t('settings.systemColors'),
+                'default': this.$t('settings.lightMode'),
+                'dark': this.$t('settings.darkMode')
+            };
+        },
+        timeFormats () {
+            return {
+                '24': '24h',
+                '12': '12h'
+            };
+        },
+        imageResizeEngines () {
+            return {
+                'sharp': 'Sharp',
+                'napi': '@napi-rs/image',
+                'jimp': 'Jimp'
+            };
+        },
+        devToolsModes () {
+            return {
+                'detach': this.$t('settings.devtoolsModeDetach'),
+                'undocked': this.$t('settings.devtoolsModeUndocked'),
+                'right': this.$t('settings.devtoolsModeRight'),
+                'bottom': this.$t('settings.devtoolsModeBottom'),
+                'left': this.$t('settings.devtoolsModeLeft')
+            };
+        },
+        orderingPostItems () {
+            return {
+                'id DESC': this.$t('settings.ordering.idDESC'),
+                'id ASC': this.$t('settings.ordering.idASC'),
+                'title DESC': this.$t('settings.ordering.titleDESC'),
+                'title ASC': this.$t('settings.ordering.titleASC'),
+                'created DESC': this.$t('settings.ordering.createdDESC'),
+                'created ASC': this.$t('settings.ordering.createdASC'),
+                'modified DESC': this.$t('settings.ordering.modifiedDESC'),
+                'modified ASC': this.$t('settings.ordering.modifiedASC'),
+                'author DESC': this.$t('settings.ordering.authorDESC'),
+                'author ASC': this.$t('settings.ordering.authorASC')
+            };
+        },
+        orderingPageItems () {
+            return {
+                ' DESC': this.$t('settings.ordering.hierarchical'),
+                'id DESC': this.$t('settings.ordering.idDESC'),
+                'id ASC': this.$t('settings.ordering.idASC'),
+                'title DESC': this.$t('settings.ordering.titleDESC'),
+                'title ASC': this.$t('settings.ordering.titleASC'),
+                'created DESC': this.$t('settings.ordering.createdDESC'),
+                'created ASC': this.$t('settings.ordering.createdASC'),
+                'modified DESC': this.$t('settings.ordering.modifiedDESC'),
+                'modified ASC': this.$t('settings.ordering.modifiedASC'),
+                'author DESC': this.$t('settings.ordering.authorDESC'),
+                'author ASC': this.$t('settings.ordering.authorASC')
+            };
+        },
+        orderingTagItems () {
+            return {
+                'id DESC': this.$t('settings.ordering.idDESC'),
+                'id ASC': this.$t('settings.ordering.idASC'),
+                'name DESC': this.$t('settings.ordering.nameDESC'),
+                'name ASC': this.$t('settings.ordering.nameASC'),
+                'postsCounter DESC': this.$t('settings.ordering.postsCounterDESC'),
+                'postsCounter ASC': this.$t('settings.ordering.postsCounterASC')
+            };
+        },
+        orderingAuthorItems () {
+            return {
+                'id DESC': this.$t('settings.ordering.idDESC'),
+                'id ASC': this.$t('settings.ordering.idASC'),
+                'name DESC': this.$t('settings.ordering.nameDESC'),
+                'name ASC': this.$t('settings.ordering.nameASC'),
+                'postsCounter DESC': this.$t('settings.ordering.postsCounterDESC'),
+                'postsCounter ASC': this.$t('settings.ordering.postsCounterASC')
+            };
+        },
+        syncInProgress () {
+            return this.$store.state.components.sidebar.syncInProgress;
+        },
+        editorFontFamilyItems () {
+            return {
+                'sans-serif': this.$t('settings.editorFontFamilySansSerif'),
+                'serif': this.$t('settings.editorFontFamilySerif')
+            };
+        }
+    },
+    watch: {
+        'locations.sites': async function () {
+            this.sitesLocationExists = await this.checkSitesCatalog();
+        },
+        'locations.backups': async function () {
+            this.backupsLocationExists = await this.checkBackupsCatalog();
+        },
+        'locations.previews': async function () {
+            this.previewsLocationExists = await this.checkPreviewsCatalog();
+        },
+        'uiZoomLevel': async function (newValue) {
+            await this.setUIZoomLevel();
+        }
+    },
+    mounted () {
+        this.locations.sites = this.$store.state.app.config.sitesLocation;
+        this.originalSitesLocation = this.locations.sites;
+        this.locations.backups = this.$store.state.app.config.backupsLocation;
+        this.locations.previews = this.$store.state.app.config.previewsLocation || '';
+        this.alwaysSaveSearchState = this.$store.state.app.config.alwaysSaveSearchState;
+        this.wideScrollbars = this.$store.state.app.config.wideScrollbars;
+        this.showTooltips = this.$store.state.app.config.showTooltips !== false;
+        this.notificationsStatus = this.$store.state.app.config.notificationsStatus === 'accepted';
+        this.openDevToolsInMainWindow = this.$store.state.app.config.openDevToolsInMain;
+        this.devToolsMode = this.$store.state.app.config.devToolsMode || 'detach';
+        this.imageResizeEnginesSelected = this.$store.state.app.config.resizeEngine;
+        this.timeFormatsSelected = (this.$store.state.app.config.timeFormat).toString();
+        this.screensSelected = this.$store.state.app.config.startScreen;
+        this.closeEditorOnSave = this.$store.state.app.config.closeEditorOnSave;
+        this.showModificationDate = this.$store.state.app.config.showModificationDate;
+        this.showModificationDateAsColumn = this.$store.state.app.config.showModificationDateAsColumn;
+        this.showPostSlugs = this.$store.state.app.config.showPostSlugs;
+        this.showPostTags = this.$store.state.app.config.showPostTags;
+        this.showPluginIcons = this.$store.state.app.config.showPluginIcons !== false;
+        this.postsOrdering = this.$store.state.app.config.postsOrdering;
+        this.pagesOrdering = this.$store.state.app.config.pagesOrdering;
+        this.tagsOrdering = this.$store.state.app.config.tagsOrdering;
+        this.authorsOrdering = this.$store.state.app.config.authorsOrdering;
+        this.enableAdvancedPreview = this.$store.state.app.config.enableAdvancedPreview;
+        this.previewServerEnabled = this.$store.state.app.config.previewServerEnabled !== false;
+        this.editorFontSize = this.$store.state.app.config.editorFontSize;
+        this.editorFontFamily = this.$store.state.app.config.editorFontFamily;
+        this.experimentalFeatureAppAutoBeautifySourceCode = this.$store.state.app.config.experimentalFeatureAppAutoBeautifySourceCode;
+        this.experimentalFeatureAppFtpAlt = this.$store.state.app.config.experimentalFeatureAppFtpAlt;
+        this.experimentalFileManagerInSidebar = this.$store.state.app.config.experimentalFileManagerInSidebar;
+        this.uiZoomLevel = this.$store.state.app.config.uiZoomLevel;
+        this.autoAdjustSidebarWidth = this.$store.state.app.config.autoAdjustSidebarWidth !== false;
+        this.theme = this.getAppTheme();
+
+        Vue.nextTick(() => {
+            this.unwatchBackupsLocation = this.$watch('locations.backups', this.detectBackupLocationChange);
+            this.unwatchPreviewsLocation = this.$watch('locations.previews', this.detectPreviewsLocationChange);
+        });
+    },
+    methods: {
+        checkBeforeSave () {
+            if (this.originalSitesLocation !== this.locations.sites) {
+                if (!this.changeSitesLocationWithoutCopying) {
+                    this.$bus.$emit('confirm-display', {
+                        hasInput: false,
+                        message: this.$t('settings.sitesLocationChangedConfirmMsg'),
+                        isDanger: true,
+                        okClick: this.save,
+                        okLabel: this.$t('settings.moveWebsitesConfirm'),
+                        cancelLabel: this.$t('ui.cancel')
+                    });
+
+                    return;
+                }
+            }
+
+            this.save();
+        },
+        save () {
+            this.buttonsLocked = true;
+
+            let newSettings = {
+                licenseAccepted: true,
+                startScreen: this.screensSelected,
+                openDevToolsInMain: this.openDevToolsInMainWindow,
+                devToolsMode: this.devToolsMode,
+                timeFormat: this.timeFormatsSelected,
+                resizeEngine: this.imageResizeEnginesSelected,
+                uiZoomLevel: this.uiZoomLevel,
+                autoAdjustSidebarWidth: this.autoAdjustSidebarWidth,
+                sitesLocation: this.locations.sites.trim(),
+                backupsLocation: this.locations.backups.trim(),
+                previewsLocation: this.locations.previews.trim(),
+                wideScrollbars: this.wideScrollbars,
+                showTooltips: this.showTooltips,
+                notificationsStatus: this.notificationsStatus ? 'accepted' : 'rejected',
+                closeEditorOnSave: this.closeEditorOnSave,
+                showModificationDate: this.showModificationDate,
+                showModificationDateAsColumn: this.showModificationDateAsColumn,
+                showPostSlugs: this.showPostSlugs,
+                showPostTags: this.showPostTags,
+                showPluginIcons: this.showPluginIcons,
+                alwaysSaveSearchState: this.alwaysSaveSearchState,
+                postsOrdering: this.postsOrdering,
+                pagesOrdering: this.pagesOrdering,
+                tagsOrdering: this.tagsOrdering,
+                authorsOrdering: this.authorsOrdering,
+                enableAdvancedPreview: this.enableAdvancedPreview,
+                previewServerEnabled: this.previewServerEnabled,
+                editorFontFamily: this.editorFontFamily,
+                editorFontSize: this.editorFontSize,
+                experimentalFeatureAppAutoBeautifySourceCode: this.experimentalFeatureAppAutoBeautifySourceCode,
+                experimentalFeatureAppFtpAlt: this.experimentalFeatureAppFtpAlt,
+                experimentalFileManagerInSidebar: this.experimentalFileManagerInSidebar,
+                changeSitesLocationWithoutCopying: this.changeSitesLocationWithoutCopying
+            };
+
+            let appConfigCopy = JSON.parse(JSON.stringify(this.$store.state.app.config));
+            newSettings = Utils.deepMerge(appConfigCopy, newSettings);
+
+            mainProcessAPI.send('app-config-save', newSettings);
+
+            mainProcessAPI.receiveOnce('app-config-saved', (data) => {
+                if (data.status === true && data.sites) {
+                    this.$store.commit('setSites', data.sites);
+                }
+
+                this.saved(newSettings, data);
+            });
+        },
+        saved (newSettings, data) {
+            if (data.status === true) {
+                this.$store.commit('setSiteDir', newSettings.sitesLocation);
+                this.$store.commit('setAppConfig', newSettings);
+                mainProcessAPI.send('app-backup-set-location', newSettings.backupsLocation);
+                this.$bus.$emit('app-settings-saved', newSettings);
+
+                this.$bus.$emit('message-display', {
+                    message: this.$t('settings.appSettingsSavedMsg'),
+                    type: 'success',
+                    lifeTime: 3
+                });
+            } else {
+                let relocationAlerts = {
+                    'location-missing': 'settings.sitesLocationErrorMissing',
+                    'locations-overlap': 'settings.sitesLocationErrorOverlap',
+                    'website-symlink': 'settings.sitesLocationErrorSymlink',
+                    'destination-exists': 'settings.sitesLocationErrorExists',
+                    'other-windows-open': 'settings.sitesLocationErrorOtherWindows',
+                    'backups-location-other-windows': 'settings.backupsLocationErrorOtherWindows',
+                    'previews-location-other-windows': 'settings.previewsLocationErrorOtherWindows',
+                    'previews-location-missing': 'settings.previewsLocationErrorMissing',
+                    'previews-location-overlap': 'settings.previewsLocationErrorOverlap',
+                    'previews-location-not-empty': 'settings.previewsLocationErrorNotEmpty'
+                };
+
+                if (data.reason && relocationAlerts[data.reason]) {
+                    // The alert renders HTML, so the file name must be escaped.
+                    let detail = String(data.reasonDetail || '').replace(/[&<>"']/g, character => '&#' + character.charCodeAt(0) + ';');
+
+                    this.$bus.$emit('alert-display', {
+                        message: this.$t(relocationAlerts[data.reason], { detail }),
+                        okLabel: this.$t('ui.iUnderstand')
+                    });
+                } else {
+                    this.$bus.$emit('message-display', {
+                        message: this.$t('settings.appSettingsSaveErrorMsg'),
+                        type: 'warning',
+                        lifeTime: 3
+                    });
+                }
+            }
+
+            this.$store.commit('setAppTheme', this.theme);
+            this.$bus.$emit('app-theme-change');
+            this.buttonsLocked = false;
+        },
+        getAppTheme () {
+            let theme = localStorage.getItem('publii-theme');
+
+            if (theme === 'system' || theme === 'dark' || theme === 'default') {
+                return theme;
+            }
+
+            return 'system';
+        },
+        detectBackupLocationChange (newValue, oldValue) {
+            if (newValue !== oldValue) {
+                this.$bus.$emit('alert-display', {
+                    message: this.$t('settings.backupLocationChangedConfirmMsg'),
+                    okLabel: this.$t('ui.iUnderstand'),
+                });
+
+                this.unwatchBackupsLocation();
+            }
+        },
+        detectPreviewsLocationChange (newValue, oldValue) {
+            if (newValue !== oldValue) {
+                this.$bus.$emit('alert-display', {
+                    message: this.$t('settings.previewsLocationChangedConfirmMsg'),
+                    okLabel: this.$t('ui.iUnderstand'),
+                });
+
+                this.unwatchPreviewsLocation();
+            }
+        },
+        async checkSitesCatalog () {
+            return await mainProcessAPI.existsSync(this.locations.sites);
+        },
+        async checkBackupsCatalog () {
+            return await mainProcessAPI.existsSync(this.locations.backups);
+        },
+        async checkPreviewsCatalog () {
+            return await mainProcessAPI.existsSync(this.locations.previews);
+        },
+        async setUIZoomLevel () {
+            this.$store.commit('setAppUIZoomLevel', this.uiZoomLevel);
+            document.documentElement.style.setProperty('--ui-zoom-level', parseInt(this.uiZoomLevel * 100.0, 10) + '%');
+            return await mainProcessAPI.send('app-set-ui-zoom-level', this.uiZoomLevel);
+        }
+    }
+}
+</script>
+
+<style scoped>
+@import '../css/notifications.css';
+
+.settings {
+    margin: 0 auto;
+    padding: var(--space-12) 0 var(--space-16);
+    user-select: none;
+    width: 100%
+}
+
+.settings-wrapper {
+    margin: 0 auto;
+    max-width: var(--wrapper-width);
+}
+
+.note.is-warning {
+    color: var(--color-danger);
+}
+
+#site-location-switcher {
+    margin: var(--space-6) 0 var(--space-4);
+    display: block;
+}
+</style>

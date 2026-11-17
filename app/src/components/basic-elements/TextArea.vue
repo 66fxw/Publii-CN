@@ -1,0 +1,471 @@
+<template>
+    <div 
+        :id="anchor"
+        :class="cssClasses">
+        <textarea
+            :id="editorID"
+            :data-id="editorID"
+            :rows="rows"
+            :cols="cols"
+            class="publii-textarea"
+            :spellcheck="spellcheck"
+            :placeholder="placeholder"
+            v-model="content"></textarea>
+        <link-popup
+            v-if="internalLinks"
+            ref="linkPopup"
+            local
+            @resolve="resolveLinkPopup" />
+        <char-counter
+            v-if="charCounter"
+            v-model="content"
+            :preferredCount="preferredCount" />
+    </div>
+</template>
+
+<script>
+import { applyAppAppearance } from './../../helpers/app-appearance';
+import Utils from './../../helpers/utils';
+import Vue from 'vue';
+import LinkPopup from './../post-editor/LinkPopup';
+import { createMiniEditorLinkSession } from './../../helpers/mini-editor-link';
+import { registerMiniEditorSelectionToolbar } from './../../helpers/mini-editor-toolbar';
+import registerPubliiIcons from './../post-editor/icons/publii-icons.js';
+
+export default {
+    name: 'text-area',
+    props: {
+        id: {
+            default: 't-editor',
+            type: String
+        },
+        value: {
+            default: '',
+            type: [String, Boolean]
+        },
+        wysiwyg: {
+            default: false,
+            type: Boolean
+        },
+        rows: {
+            default: false,
+            type: [String, Number, Boolean]
+        },
+        cols: {
+            default: false,
+            type: [String, Number, Boolean]
+        },
+        charCounter: {
+            default: false,
+            type: Boolean
+        },
+        preferredCount: {
+            default: 0,
+            type: Number
+        },
+        spellcheck: {
+            default: true,
+            type: Boolean
+        },
+        anchor: {
+            default: '',
+            type: String
+        },
+        placeholder: {
+            default: '',
+            type: String
+        },
+        internalLinks: {
+            default: false,
+            type: Boolean
+        },
+        miniEditorMode: {
+            default: false,
+            type: Boolean
+        },
+        selectionToolbar: {
+            default: false,
+            type: Boolean
+        },
+        simplifiedToolbar: {
+            default: false,
+            type: Boolean
+        },
+        customCssClasses: {
+            default: '',
+            type: String
+        }
+    },
+    components: { 'link-popup': LinkPopup },
+    data: function() {
+        return {
+            editorID: this.id,
+            content: this.value
+        };
+    },
+    computed: {
+        cssClasses () {
+            let cssClasses = { 
+                'wysiwyg-mini-editor': this.miniEditorMode, 
+                'has-simplified-toolbar': this.simplifiedToolbar 
+            };
+
+            if (this.customCssClasses && this.customCssClasses.trim() !== '') {
+                this.customCssClasses.split(' ').forEach(item => {
+                    item = item.replace(/[^a-z0-9\-\_\s]/gmi, '');
+                    cssClasses[item] = true;
+                });
+            }
+
+            return cssClasses;
+        }
+    },
+    watch: {
+        value: function (newValue, oldValue) {
+            this.content = newValue;
+        },
+        content: function(newValue) {
+            this.$emit('input', this.content);
+        }
+    },
+    async mounted () {
+        setTimeout(async () => {
+            this.content = this.value;
+
+            if (this.wysiwyg) {
+                this.editorID = this.generateID();
+
+                setTimeout(async () => {
+                    await this.initWysiwyg();
+                }, 0);
+            }
+
+            this.$bus.$on('theme-settings-before-save', () => {
+                if (this.wysiwyg) {
+                    hugerte.triggerSave();
+
+                    setTimeout(() => {
+                        this.content = hugerte.get(this.editorID).getContent()
+                    }, 250);
+                }
+            });
+
+            this.$bus.$on('view-settings-before-save', () => {
+                if (this.wysiwyg) {
+                    hugerte.triggerSave();
+
+                    setTimeout(() => {
+                        this.content = hugerte.get(this.editorID).getContent();
+                    }, 250);
+                }
+            });
+
+            this.$bus.$on('plugin-settings-before-save', () => {
+                if (this.wysiwyg) {
+                    hugerte.triggerSave();
+
+                    setTimeout(() => {
+                        if (this.editorID && hugerte.get(this.editorID)) {
+                            this.content = hugerte.get(this.editorID).getContent();
+                        }
+                    }, 250);
+                }
+            });
+        }, 0);
+    },
+    methods: {
+        async initWysiwyg () {
+            let self = this;
+            let customFormats = this.loadCustomFormatsFromTheme();
+            let pluginsList = "autolink link lists code";
+            let firstToolbarStructure = "bold italic link unlink forecolor blockquote alignleft aligncenter alignright bullist numlist blocks removeformat code";
+            let secondToolbarStructure = "";
+
+            if (customFormats.length) {
+                secondToolbarStructure = "styles blocks removeformat undo redo code";
+            }
+
+            if (this.$store.state.wysiwygTranslation) {
+                hugerte.addI18n('custom', this.$store.state.wysiwygTranslation);
+            }
+
+            if (this.simplifiedToolbar) {
+                pluginsList = "autolink link code";
+                firstToolbarStructure = "bold italic link unlink forecolor alignleft aligncenter alignright removeformat code";
+                secondToolbarStructure = "";
+            }
+
+            if (this.internalLinks) {
+                firstToolbarStructure = firstToolbarStructure.replace(/\blink\b/, 'publiilink');
+            }
+
+            registerPubliiIcons();
+
+            hugerte.init({
+                selector: 'textarea[data-id="' + this.editorID + '"]',
+                language: this.$store.state.wysiwygTranslation ? 'custom' : 'en',
+                content_css: this.getTinyMCECSSFiles(),
+                plugins: pluginsList,
+                toolbar1: firstToolbarStructure,
+                toolbar2: secondToolbarStructure,
+                toolbar3: "",
+                icons: 'publii',   
+                preview_styles: false,
+                resize: true,
+                menubar: false,
+                branding: false,
+                body_id: 'tinymce',
+                xss_sanitization: false,
+                // Isolate the editor preview without changing published iframe permissions.
+                // Nested embed previews (YouTube, Vimeo) inherit these sandbox flags, so they cannot navigate the app window or open popups.
+                // Chrome logs "An iframe which has both allow-scripts and allow-same-origin for its sandbox attribute can escape its sandboxing" - expected:
+                // allow-same-origin is required for HugeRTE to control the iframe document, allow-scripts is required for embed previews to render,
+                // and the content_security_policy below (script-src 'none') prevents any script inside the editor document from removing the sandbox.
+                iframe_attrs: {
+                    name: 'publii-wysiwyg-editor',
+                    sandbox: 'allow-scripts allow-same-origin allow-forms allow-presentation'
+                },
+                content_security_policy: "script-src 'none'; frame-src http: https:; object-src 'none';",
+                sandbox_iframes: false,
+                paste_as_text: true,
+                element_format : 'html',
+                fix_list_elements : true,
+                image_caption: true,
+                extended_valid_elements: "a[*],altGlyph[*],altGlyphDef[*],altGlyphItem[*],animate[*],animateColor[*],animateMotion[*],animateTransform[*],circle[*],clipPath[*],color-profile[*],cursor[*],defs[*],desc[*],discard[*],ellipse[*],feBlend[*],feColorMatrix[*],feComponentTransfer[*],feComposite[*],feConvolveMatrix[*],feDiffuseLighting[*],feDisplacementMap[*],feDistantLight[*],feDropShadow[*],feFlood[*],feFuncA[*],feFuncB[*],feFuncG[*],feFuncR[*],feGaussianBlur[*],feImage[*],feMerge[*],feMergeNode[*],feMorphology[*],feOffset[*],fePointLight[*],feSpecularLighting[*],feSpotLight[*],feTile[*],feTurbulence[*],filter[*],font[*],font-face[*],font-face-format[*],font-face-name[*],font-face-src[*],font-face-uri[*],foreignObject[*],g[*],glyph[*],glyphRef[*],hatch[*],hatchpath[*],hkern[*],iframe[*],image[*],line[*],linearGradient[*],marker[*],mask[*],mesh[*],meshgradient[*],meshpatch[*],meshrow[*],metadata[*],missing-glyph[*],mpath[*],path[*],pattern[*],polygon[*],polyline[*],radialGradient[*],rect[*],set[*],solidcolor[*],stop[*],style[*],svg[*],switch[*],symbol[*],text[*],textPath[*],title[*],tref[*],tspan[*],unknown[*],use[*],view[*],vkern[*],publii-amp,publii-non-amp,script[*],i[*],input[*]",
+                formats: {
+                    alignleft: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-left'},
+                    aligncenter: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-center'},
+                    alignright: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-right'},
+                    alignjustify: {selector: 'p,h1,h2,h3,h4,h5,h6,td,th,div,ul,ol,li,table,img', classes: 'align-justify'}
+                },
+                height: 320,
+                entity_encoding: "raw",
+                allow_script_urls: true,
+                convert_urls: false,
+                style_formats: customFormats,
+                contextmenu: false,
+                browser_spellcheck: this.$store.state.currentSite.config.spellchecking,
+                setup: async function (editor) {
+                    if (self.internalLinks) {
+                        editor.ui.registry.addButton('publiilink', {
+                            icon: 'link',
+                            tooltip: self.$t('link.insertEditLink'),
+                            onAction: () => self.openLinkPopup(editor)
+                        });
+                        // TinyMCE's link shortcut also uses this command.
+                        editor.on('BeforeExecCommand', event => {
+                            if (event.command.toLowerCase() === 'mcelink') {
+                                event.preventDefault();
+                                self.openLinkPopup(editor);
+                            }
+                        });
+                        editor.on('change undo redo', () => {
+                            self.content = editor.getContent();
+                        });
+                    }
+
+                    if (self.selectionToolbar) {
+                        registerMiniEditorSelectionToolbar(editor, {
+                            internalLinks: self.internalLinks,
+                            isLinkDialogOpen: () => !!self._linkSession,
+                            translate: key => self.$t(key),
+                            openExternal: url => mainProcessAPI.shellOpenExternal(url)
+                        });
+                    }
+
+                    editor.on('init', async function () {
+                        let iframe = document.querySelector('#' + self.editorID + '_ifr');
+                        let iframeDocument = iframe.contentWindow.window.document;
+                        let htmlElement = iframeDocument.querySelector('html');
+                        applyAppAppearance(
+                            iframeDocument,
+                            await self.$root.getCurrentAppTheme(),
+                            self.$root.getCurrentAppAppearance(),
+                            self.$root.getCurrentWorkspaceAccent()
+                        );
+                        htmlElement.setAttribute('style', self.$root.overridedCssVariables);
+                    });
+
+                    editor.on('input', Utils.debouncedFunction(() => {
+                        self.content = editor.getContent();
+                    }, 1000));
+                }
+            });
+        },
+        openLinkPopup (editor) {
+            if (this._linkSession || !this.$refs.linkPopup) {
+                return;
+            }
+
+            this._linkSession = createMiniEditorLinkSession(editor);
+
+            if (this.selectionToolbar) {
+                editor.dispatch('contexttoolbar-hide');
+            }
+
+            this.$refs.linkPopup.open(this._linkSession.config);
+        },
+        resolveLinkPopup (response) {
+            const session = this._linkSession;
+            this._linkSession = null;
+
+            if (session) {
+                session.finish(response);
+                this.content = session.getContent();
+            }
+        },
+        removeEditor () {
+            this._linkSession = null;
+            let editorToRemove = hugerte.get(this.editorID);
+
+            if (editorToRemove) {
+                editorToRemove.remove();
+            }
+        },
+        generateID () {
+            return 't-' + Math.ceil(Math.random() * 10000000).toString();
+        },
+        loadCustomFormatsFromTheme() {
+            let output = [];
+            let customElements = [];
+            let inlineElements = [
+                'a', 'b', 'abbr', 'acronym', 'cite', 'dfn', 'kbd',
+                'samp', 'time', 'var', 'bdo', 'br', 'big', 'code',
+                'i', 'em', 'small','strong','span', 'tt', 'img',
+                'map', 'object', 'q', 'script', 'sub', 'sup', 'button',
+                'input', 'label', 'select', 'textarea'
+            ];
+
+            // Detect mode
+            if(
+                this.$store.state.currentSite.themeSettings &&
+                this.$store.state.currentSite.themeSettings.customElementsMode &&
+                this.$store.state.currentSite.themeSettings.customElementsMode === 'advanced'
+            ) {
+                output = JSON.parse(JSON.stringify(this.$store.state.currentSite.themeSettings.customElements));
+                return output;
+            }
+
+            // Load custom elements
+            if(
+                this.$store.state.currentSite.themeSettings &&
+                this.$store.state.currentSite.themeSettings.customElements
+            ) {
+                customElements = this.$store.state.currentSite.themeSettings.customElements;
+            }
+
+            if(customElements && customElements.length) {
+                for(let i = 0; i < customElements.length; i++) {
+                    if(!customElements[i]) {
+                        continue;
+                    }
+
+                    if(!customElements[i].tag && !customElements[i].selector) {
+                        continue;
+                    }
+
+                    if(!customElements[i].themeSettings) {
+                        continue;
+                    }
+
+                    let style = {
+                        title: customElements[i].label,
+                        classes: customElements[i].cssClasses
+                    };
+
+                    if(customElements[i].selector) {
+                        style.selector = customElements[i].selector;
+                    } else {
+                        if (inlineElements.indexOf(customElements[i].tag)) {
+                            style.inline = customElements[i].tag;
+                        } else {
+                            style.block = customElements[i].tag;
+                        }
+                    }
+
+                    output.push(style);
+                }
+            }
+
+            return output;
+        },
+        extensionsPath () {
+            return [
+                'file:///',
+                this.$store.state.currentSite.siteDir,
+                '/input/themes/',
+                this.$store.state.currentSite.config.theme,
+                '/'
+            ].join('');
+        },
+        getTinyMCECSSFiles () {
+            let pathToEditorCSS = this.extensionsPath() + 'assets/css/editor.css';
+            let customEditorCSS = pathToEditorCSS;
+
+            return [
+                'css/editor-options.css?v=0711',
+                customEditorCSS
+            ].join(',');
+        },
+        setContent (newContent) {
+            Vue.set(this, 'content', newContent);
+            this.$emit('input', this.content);
+        }
+    },
+    beforeDestroy () {
+        this._linkSession = null;
+        if (this.wysiwyg) {
+            let editorToRemove = hugerte.get(this.editorID);
+
+            if (editorToRemove) {
+                editorToRemove.remove();
+            }
+            
+            this.$bus.$off('theme-settings-before-save');
+            this.$bus.$off('plugin-settings-before-save');
+            this.$bus.$off('view-settings-before-save');
+        }
+    }
+}
+</script>
+
+<style>
+@import '../../css/editor/post-editors-common.css';
+@import '../../css/editor/editor-overrides.css';
+
+.publii-textarea {
+    background-color: var(--input-bg);
+    border: none;
+    border-radius: var(--radius-base);
+    box-shadow: inset 0 0 0 1px var(--input-border-color);
+    color: var(--text-primary-color);
+    display: block;
+    font: var(--font-weight-regular) var(--font-size-ui-md)/var(--line-height-base) var(--font-family-sans);
+    max-width: 100%;
+    overflow: auto;
+    outline: none;
+    padding: 12px 18px;
+    resize: vertical;
+    width: 100%;
+
+    &:focus {
+        box-shadow: var(--input-shadow-focus);
+    }
+
+    &[disabled],
+    &[readonly] {
+        opacity: .5;
+        cursor: not-allowed;
+
+        &:focus {
+            box-shadow: inset 0 0 0 1px var(--input-border-color);
+        }
+    }
+
+    /* Invalid state: the shared ring, kept while focused */
+    &[aria-invalid="true"],
+    .is-invalid & {
+        box-shadow: var(--input-shadow-invalid);
+    }
+}
+</style>

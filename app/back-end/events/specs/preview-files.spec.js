@@ -1,0 +1,511 @@
+const assert = require('node:assert/strict');
+const fs = require('fs-extra');
+const os = require('node:os');
+const path = require('node:path');
+const vm = require('node:vm');
+const EventEmitter = require('node:events');
+const { pathToFileURL } = require('node:url');
+const getDirectorySize = require('../../helpers/directory-size.js');
+
+describe('Local preview files IPC', function () {
+    let sitesDir;
+    let application;
+    let handlers;
+    let events;
+    let broadcasts;
+    let disabledPreviews;
+    let sizeChecks;
+    let pendingSizeCheck;
+    let appliedMimeTypes;
+    let configNotifications;
+    let pendingDisabling;
+    let enabledPreviews;
+    let workers;
+    let openedUrls;
+
+    // Results come from another realm, so they are compared as plain data
+    function plain (value) {
+        return JSON.parse(JSON.stringify(value));
+    }
+
+    function invoke (channel, ...args) {
+        return handlers.get(channel)({ sender: { id: 1 } }, ...args);
+    }
+
+    beforeEach(function () {
+        sitesDir = fs.mkdtempSync(path.join(os.tmpdir(), 'publii-preview-files-'));
+        fs.outputFileSync(path.join(sitesDir, 'demo', 'preview', 'index.html'), '12345');
+        fs.outputFileSync(path.join(sitesDir, 'demo', 'preview', 'media', 'image.jpg'), '1234567890');
+        fs.outputFileSync(path.join(sitesDir, 'blog', 'preview', 'index.html'), '123');
+        fs.ensureDirSync(path.join(sitesDir, 'empty-preview', 'preview'));
+        fs.ensureDirSync(path.join(sitesDir, 'no-preview', 'input'));
+
+        handlers = new Map();
+        broadcasts = [];
+        disabledPreviews = [];
+        sizeChecks = [];
+        pendingSizeCheck = null;
+        appliedMimeTypes = [];
+        configNotifications = [];
+        pendingDisabling = null;
+        enabledPreviews = [];
+        workers = [];
+        openedUrls = [];
+
+        application = {
+            sitesDir: sitesDir,
+            sites: { 'demo': {}, 'blog': {}, 'empty-preview': {}, 'no-preview': {} },
+            appConfig: { previewServerPort: 3000, previewServerMimeTypes: [] },
+            appConfigPath: path.join(sitesDir, 'app-config.json'),
+            notifyAppConfigChanged (exceptWebContentsId) {
+                configNotifications.push(exceptWebContentsId);
+            },
+            previewServer: {
+                isSiteEnabled () {
+                    return false;
+                },
+                async enableSite (siteName, dir, options) {
+                    enabledPreviews.push({ siteName, dir, options });
+                    return 'http://127.0.0.1:3000/' + siteName;
+                },
+                getSiteUrl (siteName) {
+                    return enabledPreviews.some(preview => preview.siteName === siteName) ? 'http://127.0.0.1:3000/' + siteName : null;
+                },
+                async disableSite (siteName) {
+                    disabledPreviews.push(siteName);
+                    await pendingDisabling;
+                },
+                setCustomMimeTypes (mimeTypes) {
+                    appliedMimeTypes.push(mimeTypes);
+                }
+            },
+            windowManager: {
+                onWindowDestroyed () {},
+                broadcast (channel, payload) {
+                    broadcasts.push({ channel, payload });
+                }
+            }
+        };
+
+        const context = {
+            module: { exports: {} },
+            console: { log () {} },
+            // The worker path is built from the directory of preview.js
+            __dirname: path.join(__dirname, '..'),
+            // The browser is opened with a delay
+            setTimeout (callback) {
+                callback();
+            },
+            require (name) {
+                if (name === 'electron') {
+                    return {
+                        shell: {
+                            openExternal (url) {
+                                openedUrls.push(url);
+                            }
+                        },
+                        ipcMain: {
+                            on () {},
+                            handle (channel, handler) {
+                                handlers.set(channel, handler);
+                            }
+                        }
+                    };
+                }
+
+                if (name === '../helpers/directory-size.js') {
+                    return function (dir) {
+                        sizeChecks.push(dir);
+                        return pendingSizeCheck || getDirectorySize(dir);
+                    };
+                }
+
+                if (name === 'fs-extra' || name === 'path' || name === 'url') {
+                    return require(name);
+                }
+
+                if (name === 'striptags') {
+                    return value => value;
+                }
+
+                if (name === '../helpers/ipc.helper.js') {
+                    return {
+                        createSafeSender: webContents => webContents,
+                        trackWorkerProcess () {},
+                        abortWindowWorkerProcess () {},
+                        forkWorkerWithLogs () {
+                            let worker = new EventEmitter();
+                            worker.messages = [];
+                            worker.send = message => worker.messages.push(message);
+                            workers.push(worker);
+                            return worker;
+                        }
+                    };
+                }
+
+                if (name === '../helpers/site-logs.js') {
+                    return {
+                        getWorkerLogsDirectory: () => sitesDir
+                    };
+                }
+
+                if (name === '../helpers/path-validator.js' || name === '../modules/preview-server/preview-server.js') {
+                    return require(path.join(__dirname, '..', name));
+                }
+
+                return {};
+            }
+        };
+
+        vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../preview.js'), 'utf8'), context);
+        events = new context.module.exports(application);
+    });
+
+    afterEach(function () {
+        fs.removeSync(sitesDir);
+    });
+
+    it('lists websites with preview files without checking their sizes', async function () {
+        let files = plain(await invoke('app-local-preview:get-files-overview'));
+
+        assert.deepEqual(files, [{ name: 'demo', size: null }, { name: 'blog', size: null }]);
+        assert.deepEqual(sizeChecks, []);
+    });
+
+    it('checks the size on demand and keeps it', async function () {
+        assert.deepEqual(plain(await invoke('app-local-preview:get-size', 'demo')), { status: true, size: 15 });
+
+        // Files changed outside of Publii are not tracked - the size is valid until the next rendering or clearing
+        fs.outputFileSync(path.join(sitesDir, 'demo', 'preview', 'new.html'), '12345');
+
+        assert.deepEqual(plain(await invoke('app-local-preview:get-size', 'demo')), { status: true, size: 15 });
+        assert.equal(sizeChecks.length, 1);
+        assert.deepEqual(plain(await invoke('app-local-preview:get-files-overview')), [
+            { name: 'demo', size: 15 },
+            { name: 'blog', size: null }
+        ]);
+    });
+
+    it('shares one check between all windows', async function () {
+        let results = await Promise.all([
+            invoke('app-local-preview:get-size', 'demo'),
+            invoke('app-local-preview:get-size', 'demo'),
+            invoke('app-local-preview:get-size', 'demo')
+        ]);
+
+        assert.deepEqual(plain(results), [{ status: true, size: 15 }, { status: true, size: 15 }, { status: true, size: 15 }]);
+        assert.equal(sizeChecks.length, 1);
+    });
+
+    it('checks the size again when the preview files were changed', async function () {
+        await invoke('app-local-preview:get-size', 'demo');
+        fs.outputFileSync(path.join(sitesDir, 'demo', 'preview', 'new.html'), '12345');
+        events.invalidatePreviewSize('demo');
+
+        assert.deepEqual(plain(await invoke('app-local-preview:get-size', 'demo')), { status: true, size: 20 });
+        assert.equal(sizeChecks.length, 2);
+        assert.deepEqual(broadcasts, [{ channel: 'app-local-preview-files-changed', payload: 'demo' }]);
+    });
+
+    it('drops the result of a check when the files were changed in the meantime', async function () {
+        let finishCheck;
+        pendingSizeCheck = new Promise(resolve => finishCheck = resolve);
+
+        let result = invoke('app-local-preview:get-size', 'demo');
+        events.invalidatePreviewSize('demo');
+        finishCheck(15);
+
+        assert.deepEqual(plain(await result), { status: false, reason: 'outdated' });
+
+        pendingSizeCheck = null;
+        assert.deepEqual(plain(await invoke('app-local-preview:get-files-overview'))[0], { name: 'demo', size: null });
+    });
+
+    it('does not check websites which are being rendered', async function () {
+        events.renderingSites.set('demo', 1);
+
+        assert.deepEqual(plain(await invoke('app-local-preview:get-size', 'demo')), { status: false, reason: 'rendering-in-progress' });
+        assert.deepEqual(sizeChecks, []);
+
+        events.releaseRenderingSite('demo');
+
+        assert.deepEqual(plain(await invoke('app-local-preview:get-size', 'demo')), { status: true, size: 15 });
+    });
+
+    it('rejects unknown and unsafe websites', async function () {
+        for (let siteName of ['unknown', '../demo', '', null, undefined]) {
+            assert.deepEqual(plain(await invoke('app-local-preview:get-size', siteName)), { status: false, reason: 'site-not-exists' });
+            assert.deepEqual(plain(await invoke('app-local-preview:clear', siteName)), { status: false, reason: 'site-not-exists' });
+        }
+
+        assert.deepEqual(sizeChecks, []);
+        assert.equal(fs.existsSync(path.join(sitesDir, 'demo', 'preview', 'index.html')), true);
+    });
+
+    it('clears preview files of the website and disables its preview', async function () {
+        await invoke('app-local-preview:get-size', 'demo');
+
+        assert.deepEqual(plain(await invoke('app-local-preview:clear', 'demo')), { status: true });
+        assert.equal(fs.existsSync(path.join(sitesDir, 'demo', 'preview')), false);
+        assert.equal(fs.existsSync(path.join(sitesDir, 'demo')), true);
+        assert.deepEqual(disabledPreviews, ['demo']);
+        assert.deepEqual(plain(await invoke('app-local-preview:get-files-overview')), [{ name: 'blog', size: null }]);
+        assert.deepEqual(broadcasts, [{ channel: 'app-local-preview-files-changed', payload: 'demo' }]);
+    });
+
+    it('saves file types added by the user and applies them to the server', async function () {
+        let result = plain(await invoke('app-local-preview:set-mime-types', [{ extension: 'ZIP', mimeType: 'Application/Zip' }]));
+        let expected = [{ extension: '.zip', mimeType: 'application/zip' }];
+
+        assert.deepEqual(result, { status: true, mimeTypes: expected });
+        assert.deepEqual(fs.readJsonSync(application.appConfigPath).previewServerMimeTypes, expected);
+        assert.deepEqual(plain(appliedMimeTypes), [expected]);
+        assert.deepEqual(configNotifications, [1]);
+        assert.deepEqual(plain(await invoke('app-local-preview:get-mime-types')).custom, expected);
+        assert.ok(plain(await invoke('app-local-preview:get-mime-types')).builtIn.some(item => item.extension === '.html'));
+    });
+
+    it('does not save an invalid list of file types', async function () {
+        for (let mimeTypes of [[{ extension: '../x', mimeType: 'application/zip' }], [{ extension: '.html', mimeType: 'text/plain' }], 'zip', null]) {
+            assert.equal(plain(await invoke('app-local-preview:set-mime-types', mimeTypes)).status, false);
+        }
+
+        assert.equal(fs.existsSync(application.appConfigPath), false);
+        assert.deepEqual(plain(application.appConfig.previewServerMimeTypes), []);
+        assert.deepEqual(appliedMimeTypes, []);
+        assert.deepEqual(configNotifications, []);
+    });
+
+    it('ignores invalid file types stored in the config file', async function () {
+        application.appConfig.previewServerMimeTypes = [{ extension: '.zip', mimeType: 'application/zip' }, { extension: '../x', mimeType: 'x/y' }, null];
+
+        assert.deepEqual(plain(await invoke('app-local-preview:get-mime-types')).custom, [{ extension: '.zip', mimeType: 'application/zip' }]);
+    });
+
+    it('disables previews only for valid website names', async function () {
+        for (let siteName of ['../demo', 'demo/preview', '', '.', '..', null, undefined, 7, { name: 'demo' }]) {
+            assert.equal(await invoke('app-local-preview:disable-site', siteName), false);
+        }
+
+        assert.deepEqual(disabledPreviews, []);
+        assert.equal(await invoke('app-local-preview:disable-site', 'demo'), true);
+        assert.deepEqual(disabledPreviews, ['demo']);
+    });
+
+    it('does not render the preview while its files are being cleared', async function () {
+        let finishDisabling;
+        let renderErrors = [];
+        pendingDisabling = new Promise(resolve => finishDisabling = resolve);
+
+        let clearing = invoke('app-local-preview:clear', 'demo');
+
+        await events.renderSite('demo', false, false, false, {
+            id: 1,
+            isDestroyed: () => false,
+            send (channel, payload) {
+                renderErrors.push({ channel, payload });
+            }
+        }, true);
+
+        assert.equal(renderErrors.length, 1);
+        assert.equal(renderErrors[0].channel, 'app-preview-render-error');
+        assert.equal(plain(renderErrors[0].payload).message[0].message.translation, 'core.rendering.previewClearingInProgress');
+        assert.equal(events.renderingSites.has('demo'), false);
+
+        finishDisabling();
+
+        assert.deepEqual(plain(await clearing), { status: true });
+        assert.equal(fs.existsSync(path.join(sitesDir, 'demo', 'preview')), false);
+        assert.equal(events.clearingSites.has('demo'), false);
+    });
+
+    it('shares one clearing between all windows', async function () {
+        let results = await Promise.all([
+            invoke('app-local-preview:clear', 'demo'),
+            invoke('app-local-preview:clear', 'demo')
+        ]);
+
+        assert.deepEqual(plain(results), [{ status: true }, { status: true }]);
+        assert.deepEqual(disabledPreviews, ['demo']);
+        assert.equal(events.clearingSites.has('demo'), false);
+    });
+
+    describe('custom previews location', function () {
+        let previewsDir;
+
+        beforeEach(function () {
+            previewsDir = path.join(sitesDir, 'previews');
+            fs.outputFileSync(path.join(previewsDir, 'demo', 'index.html'), '1234567');
+            application.appConfig.previewsLocation = ' ' + previewsDir + ' ';
+        });
+
+        it('stores the preview of every website in its own subdirectory', function () {
+            assert.equal(events.getPreviewDir('demo'), path.join(previewsDir, 'demo'));
+            assert.equal(events.getPreviewDir('blog'), path.join(previewsDir, 'blog'));
+
+            application.appConfig.previewsLocation = '';
+            assert.equal(events.getPreviewDir('demo'), path.join(sitesDir, 'demo', 'preview'));
+
+            delete application.appConfig.previewsLocation;
+            assert.equal(events.getPreviewDir('demo'), path.join(sitesDir, 'demo', 'preview'));
+        });
+
+        it('lists, checks and clears only the preview files from the custom location', async function () {
+            assert.deepEqual(plain(await invoke('app-local-preview:get-files-overview')), [{ name: 'demo', size: null }]);
+
+            let size = plain(await invoke('app-local-preview:get-size', 'demo'));
+            assert.equal(size.status, true);
+            assert.deepEqual(sizeChecks, [path.join(previewsDir, 'demo')]);
+
+            assert.deepEqual(plain(await invoke('app-local-preview:clear', 'demo')), { status: true });
+            assert.equal(fs.existsSync(path.join(previewsDir, 'demo')), false);
+            assert.deepEqual(disabledPreviews, ['demo']);
+            // Files in the directory of the website are not touched
+            assert.equal(fs.existsSync(path.join(sitesDir, 'demo', 'preview', 'index.html')), true);
+        });
+    });
+
+    describe('rendering the preview', function () {
+        let replies;
+        let sender;
+
+        beforeEach(function () {
+            replies = [];
+            sender = {
+                id: 1,
+                isDestroyed: () => false,
+                send (channel, payload) {
+                    replies.push({ channel, payload });
+                }
+            };
+        });
+
+        function finishRendering () {
+            workers[0].emit('message', { type: 'app-rendering-results', result: true });
+            workers[0].emit('exit');
+        }
+
+        it('serves the preview from the local server and opens it in the browser', async function () {
+            await events.renderSite('demo', false, false, false, sender, true);
+
+            assert.equal(enabledPreviews.length, 1);
+            assert.equal(enabledPreviews[0].dir, path.join(sitesDir, 'demo', 'preview'));
+            assert.deepEqual(plain(enabledPreviews[0].options), { port: 3000, portFallback: true });
+            assert.equal(workers.length, 1);
+            assert.equal(workers[0].messages[0].previewUrl, 'http://127.0.0.1:3000/demo');
+            assert.equal(workers[0].messages[0].previewMode, true);
+            assert.equal(workers[0].messages[0].previewDir, path.join(sitesDir, 'demo', 'preview'));
+
+            finishRendering();
+
+            assert.deepEqual(openedUrls, ['http://127.0.0.1:3000/demo/']);
+            assert.deepEqual(plain(replies), [{ channel: 'app-preview-rendered', payload: { status: true } }]);
+            assert.equal(events.renderingSites.has('demo'), false);
+        });
+
+        it('opens the single item preview file on the local server', async function () {
+            await events.renderSite('demo', 12, { title: 'Draft' }, 'post', sender, true);
+            finishRendering();
+
+            assert.deepEqual(openedUrls, ['http://127.0.0.1:3000/demo/preview.html']);
+        });
+
+        it('renders the preview for the disk when the local server is disabled', async function () {
+            application.appConfig.previewServerEnabled = false;
+
+            await events.renderSite('demo', false, false, false, sender, true);
+
+            assert.deepEqual(enabledPreviews, []);
+            assert.deepEqual(disabledPreviews, ['demo']);
+            assert.equal(workers[0].messages[0].previewUrl, false);
+            assert.equal(workers[0].messages[0].previewMode, true);
+
+            finishRendering();
+
+            assert.deepEqual(openedUrls, [pathToFileURL(path.join(sitesDir, 'demo', 'preview', 'index.html')).href]);
+            assert.deepEqual(plain(replies), [{ channel: 'app-preview-rendered', payload: { status: true } }]);
+
+            openedUrls = [];
+            workers = [];
+            await events.renderSite('demo', 12, { title: 'Draft' }, 'page', sender, true);
+            finishRendering();
+
+            assert.deepEqual(openedUrls, [pathToFileURL(path.join(sitesDir, 'demo', 'preview', 'preview.html')).href]);
+        });
+
+        it('generates preview files for the local server without opening the browser', async function () {
+            await events.renderSite('demo', false, false, false, sender, false);
+
+            assert.equal(enabledPreviews.length, 1);
+            assert.deepEqual(disabledPreviews, []);
+            assert.equal(workers[0].messages[0].previewUrl, 'http://127.0.0.1:3000/demo');
+
+            finishRendering();
+
+            assert.deepEqual(openedUrls, []);
+            assert.deepEqual(plain(replies), [{ channel: 'app-preview-rendered', payload: { status: true } }]);
+            assert.deepEqual(disabledPreviews, []);
+        });
+
+        it('disables the preview enabled only for the generated files which have failed', async function () {
+            await events.renderSite('demo', false, false, false, sender, false);
+
+            workers[0].emit('message', { type: 'app-rendering-results', result: false });
+            workers[0].emit('exit');
+
+            assert.deepEqual(disabledPreviews, ['demo']);
+        });
+
+        it('generates preview files for the disk when the local server is disabled', async function () {
+            application.appConfig.previewServerEnabled = false;
+
+            await events.renderSite('demo', false, false, false, sender, false);
+
+            assert.deepEqual(enabledPreviews, []);
+            assert.deepEqual(disabledPreviews, ['demo']);
+            assert.equal(workers[0].messages[0].previewUrl, false);
+
+            finishRendering();
+
+            assert.deepEqual(openedUrls, []);
+        });
+
+        it('renders the preview into the custom previews location', async function () {
+            let previewsDir = path.join(sitesDir, 'previews');
+            fs.ensureDirSync(previewsDir);
+            application.appConfig.previewsLocation = previewsDir;
+
+            await events.renderSite('demo', false, false, false, sender, true);
+
+            assert.equal(enabledPreviews[0].dir, path.join(previewsDir, 'demo'));
+            assert.equal(fs.existsSync(path.join(previewsDir, 'demo')), true);
+            assert.equal(workers[0].messages[0].previewDir, path.join(previewsDir, 'demo'));
+
+            finishRendering();
+
+            assert.deepEqual(openedUrls, ['http://127.0.0.1:3000/demo/']);
+        });
+
+        it('opens the preview rendered for the disk from the custom previews location', async function () {
+            let previewsDir = path.join(sitesDir, 'previews');
+            application.appConfig.previewServerEnabled = false;
+            application.appConfig.previewsLocation = previewsDir;
+
+            await events.renderSite('demo', 12, { title: 'Draft' }, 'post', sender, true);
+
+            assert.equal(workers[0].messages[0].previewDir, path.join(previewsDir, 'demo'));
+
+            finishRendering();
+
+            assert.deepEqual(openedUrls, [pathToFileURL(path.join(previewsDir, 'demo', 'preview.html')).href]);
+        });
+    });
+
+    it('does not clear preview files during the rendering', async function () {
+        events.renderingSites.set('demo', 1);
+
+        assert.deepEqual(plain(await invoke('app-local-preview:clear', 'demo')), { status: false, reason: 'rendering-in-progress' });
+        assert.equal(fs.existsSync(path.join(sitesDir, 'demo', 'preview', 'index.html')), true);
+        assert.deepEqual(disabledPreviews, []);
+    });
+});

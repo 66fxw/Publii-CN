@@ -1,0 +1,462 @@
+<template>
+    <section
+        class="collection-page"
+        :class="{
+            'content': true,
+            'authors': true,
+            'authors-list-view': true,
+            'no-scroll': editorVisible
+        }">
+        <div class="collection-page-header">
+            <p-header :title="$t('ui.authors')">
+                <header-search
+                    slot="search"
+                    :placeholder="$t('author.filterOrSearchAuthors')"
+                    onChangeEventName="authors-filter-value-changed" />
+
+                <p-button
+                    :onClick="addAuthor"
+                    slot="buttons"
+                    intent="primary"
+                    icon="plus">
+                    {{ $t('author.addNewAuthor') }}
+                </p-button>
+            </p-header>
+        </div>
+
+        <collection
+            v-if="!emptySearchResults"
+            :columns="5">
+            <collection-header slot="header">
+                <collection-cell>
+                    <checkbox
+                        :aria-label="$t('ui.selectAllVisibleItems')"
+                        value="all"
+                        :checked="allVisibleSelected"
+                        :indeterminate="someVisibleSelected"
+                        :disabled="!collectionSelectionIds.length"
+                        :onClick="toggleAllCheckboxes" />
+                </collection-cell>
+
+                <collection-cell>
+                    <collection-sort-button
+                        :label="$t('ui.name')"
+                        :active="orderBy === 'name'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('name')" />
+                </collection-cell>
+
+                <collection-cell 
+                    justify-content="center"
+                    text-align="center"
+                    min-width="100px">
+                    <collection-sort-button
+                        :label="$t('ui.posts')"
+                        :active="orderBy === 'postsCounter'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('postsCounter')" />
+                </collection-cell>
+
+                <collection-cell variant="identifier">
+                    <collection-sort-button
+                        :label="$t('ui.id')"
+                        :active="orderBy === 'id'"
+                        :order="order"
+                        :reserve-width="false"
+                        :disabled="anyCheckboxIsSelected"
+                        @click="ordering('id')" />
+                </collection-cell>
+
+                <collection-cell variant="menu"></collection-cell>
+
+                <div
+                    v-if="anyCheckboxIsSelected"
+                    class="tools">
+                    <p-button
+                        icon="trash"
+                        appearance="light"
+                        size="small"
+                        :onClick="bulkDelete">
+                        {{ $t('ui.delete') }}
+                    </p-button>
+                </div>
+            </collection-header>
+
+            <collection-row
+                v-for="item in items"
+                slot="content"
+                :key="'collection-row-' + item.id"
+                :main-author="item.id === 1">
+                <collection-cell>
+                    <checkbox
+                        :aria-label="$t('ui.selectItem', { name: item.name })"
+                        v-if="item.id !== 1"
+                        :value="item.id"
+                        :checked="isChecked(item.id)"
+                        :onClick="toggleSelection"
+                        :key="'collection-row-checkbox-' + item.id" />
+
+                    <span
+                        v-if="item.id === 1"
+                        class="main-author-icon"
+                        v-tooltip.hover="$t('author.mainAuthorCannotBeRemoved')"
+                        aria-hidden="true">
+                        <icon
+                            size="s"
+                            name="padlock"
+                            focusable="false" />
+                    </span>
+                </collection-cell>
+
+                <collection-cell variant="titles">
+                    <h2 class="title">
+                        <a
+                            href="#"
+                            v-tooltip.focus="item.id === 1 ? $t('author.mainAuthorCannotBeRemoved') : ''"
+                            @click.prevent.stop="editAuthor(item)">
+                            {{ item.name }}
+
+                            <em
+                                v-if="item.id === 1"
+                                class="is-main-author">
+                                ({{ $t('author.mainAuthor') }})
+                            </em>
+                        </a>
+                    </h2>
+
+                    <div
+                        v-if="showAuthorSlugs"
+                        class="author-slug">
+                        {{ $t('author.url') }}: /{{ item.username }}<template v-if="!$store.state.currentSite.config.advanced.urls.cleanUrls">.html</template>
+                    </div>
+                </collection-cell>
+
+                <collection-cell
+                    justify-content="center"
+                    text-align="center">
+                    <a
+                        @click.prevent.stop="showPostsConnectedWithAuthor(item.name)"
+                        href="#">
+                        {{ item.postsCounter }}
+                    </a>
+                </collection-cell>
+
+                <collection-cell variant="identifier">
+                    {{ item.id }}
+                </collection-cell>
+
+                <collection-cell
+                    variant="menu"
+                    justify-content="flex-end">
+                    <action-menu
+                        :items="authorRowActions(item)"
+                        :label="$t('ui.otherOptions') + ': ' + item.name" />
+                </collection-cell>
+            </collection-row>
+        </collection>
+
+        <transition>
+            <author-form
+                v-if="editorVisible"
+                :form-animation="formAnimation"
+                :return-focus="editorTrigger" />
+        </transition>
+
+        <empty-state
+            v-if="emptySearchResults"
+            :description="$t('author.noAuthorsMatchingYourCriteria')"></empty-state>
+    </section>
+</template>
+
+<script>
+import focusReturnTarget from '../helpers/focus-return-target.js';
+import CollectionSortButton from './basic-elements/CollectionSortButton.vue';
+import escapeHTML from '../helpers/escape-html.js';
+import Tooltip from '../helpers/tooltip.js';
+import AuthorForm from './AuthorForm';
+import CollectionCheckboxes from './mixins/CollectionCheckboxes.js';
+import CollectionOrdering from './mixins/CollectionOrdering.js';
+
+export default {
+    directives: {
+        tooltip: Tooltip
+    },
+    name: 'authors',
+    mixins: [
+        CollectionOrdering,
+        CollectionCheckboxes
+    ],
+    components: {
+        CollectionSortButton,
+        'author-form': AuthorForm
+    },
+    data: function() {
+        return {
+            formAnimation: false,
+            editorVisible: false,
+            editorTrigger: null,
+            filterValue: '',
+            selectedItems: [],
+            orderBy: 'id',
+            order: 'DESC'
+        };
+    },
+    computed: {
+        collectionSelectionIds () {
+            return this.items.filter(item => item.id !== 1).map(item => item.id);
+        },
+        items: function() {
+            return this.$store.getters.siteAuthors(this.filterValue, this.orderBy, this.order);
+        },
+        emptySearchResults: function() {
+            return this.filterValue !== '' && !this.items.length;
+        },
+        showAuthorSlugs () {
+            return this.$store.state.app.config.showPostSlugs;
+        }
+    },
+    watch: {
+        editorVisible (newValue, oldValue) {
+            if (newValue !== oldValue) {
+                this.formAnimation = true;
+
+                setTimeout(() => {
+                    this.formAnimation = false;
+                }, 500);
+            }
+        }
+    },
+    beforeMount () {
+        mainProcessAPI.send('app-authors-load', {
+            "site": this.$store.state.currentSite.config.name
+        });
+
+        mainProcessAPI.receiveOnce('app-authors-loaded', (data) => {
+            this.$store.commit('setAuthors', data.authors);
+            this.$store.commit('setPostAuthors', data.postsAuthors);
+        });
+    },
+    mounted: function() {
+        this.orderBy = this.$store.state.ordering.authors.orderBy;
+        this.order = this.$store.state.ordering.authors.order;
+
+        this.$bus.$on('authors-filter-value-changed', (newValue) => {
+            this.filterValue = newValue.trim().toLowerCase();
+        });
+
+        this.$bus.$on('hide-author-item-editor', () => {
+            if (document.querySelector('.authors-list-view .item.is-edited')) {
+                document.querySelector('.authors-list-view .item.is-edited').classList.remove('is-edited');
+            }
+
+            this.editorVisible = false;
+        });
+
+        this.$bus.$on('site-switched', () => {
+            setTimeout(() => {
+                this.saveOrdering(this.$store.state.ordering.authors.orderBy, this.$store.state.ordering.authors.order);
+            }, 500);
+        });
+
+        this.$bus.$on('app-settings-saved', newSettings => {
+            if (this.orderBy + ' ' + this.order !== newSettings.authorsOrdering) {
+                let order = newSettings.authorsOrdering.split(' ');
+                this.saveOrdering(order[0], order[1]);
+            }
+        });
+    },
+    methods: {
+        addAuthor () {
+            this.editorTrigger = focusReturnTarget(document.activeElement);
+            this.$bus.$on('show-author-item-editor', () => ({
+                id: 0,
+                name: '',
+                username: '',
+                email: '',
+                website: '',
+                avatar: '',
+                useGravatar: false,
+                description: '',
+                postsCounter: 0,
+                metaTitle: '',
+                metaDescription: '',
+                template: '',
+                authorTemplates: [],
+                additionalData: {},
+                visibleIndexingOptions: false
+            }));
+
+            this.editorVisible = true;
+        },
+        editAuthor (item) {
+            this.editorTrigger = focusReturnTarget(document.activeElement);
+            if (document.querySelector('.authors-list-view .item.is-edited')) {
+                document.querySelector('.authors-list-view .item.is-edited').classList.remove('is-edited');
+            }
+
+            let input = document.querySelector('.authors-list-view .item input[value="' + parseInt(item.id, 10) + '"]');
+            
+            if (input) {
+                input.parentNode.parentNode.classList.add('is-edited');
+            } else {
+                document.querySelector('.authors-list-view .item.is-main-author').classList.add('is-edited');
+            }
+
+            this.editorVisible = true;
+
+            setTimeout(() => {
+                this.$bus.$emit('show-author-item-editor', item);
+            }, 100);
+        },
+        bulkDelete: function() {
+            const selectedItems = this.getSelectedItems().filter(id => id !== 1);
+
+            if (selectedItems.length === 0) {
+                return;
+            }
+
+            if (selectedItems.length === 1) {
+                const item = this.items.find(item => item.id === selectedItems[0]);
+                this.deleteAuthor(item);
+                return;
+            }
+
+            this.$bus.$emit('confirm-display', {
+                message: this.$t('author.removeAuthorsMessage'),
+                okLabel: this.$t('author.deleteAuthors'),
+                isDanger: true,
+                okClick: this.deleteSelected
+            });
+        },
+        deleteSelected: function() {
+            this.deleteAuthors(this.getSelectedItems());
+        },
+        deleteAuthor (item) {
+            this.$bus.$emit('confirm-display', {
+                message: this.$t('author.removeSingleAuthorMessage', {
+                    name: escapeHTML(item.name)
+                }),
+                okLabel: this.$t('author.deleteAuthor'),
+                isDanger: true,
+                okClick: () => this.deleteAuthors([item.id])
+            });
+        },
+        authorRowActions (item) {
+            return [
+                {
+                    label: this.$t('ui.edit'),
+                    value: 'edit',
+                    icon: 'edit',
+                    onClick: () => this.editAuthor(item)
+                },
+                {
+                    separator: true
+                },
+                {
+                    label: this.$t('ui.delete'),
+                    value: 'delete',
+                    icon: 'trash',
+                    intent: 'danger',
+                    disabled: item.id === 1,
+                    disabledReason: this.$t('author.mainAuthorCannotBeRemoved'),
+                    onClick: () => this.deleteAuthor(item)
+                }
+            ];
+        },
+        deleteAuthors (itemsToRemove) {
+            itemsToRemove = itemsToRemove.filter(item => item !== 1);
+
+            if(itemsToRemove.length === 0) {
+                this.$bus.$emit('alert-display', {
+                    message: this.$t('author.cannotRemoveMainAuthor')
+                });
+
+                return;
+            }
+
+            mainProcessAPI.send('app-author-delete', {
+                "site": this.$store.state.currentSite.config.name,
+                "ids": itemsToRemove
+            });
+
+            mainProcessAPI.receiveOnce('app-author-deleted', () => {
+                this.$store.commit('removeAuthors', itemsToRemove);
+                this.selectedItems = [];
+
+                this.$bus.$emit('message-display', {
+                    message: this.$t('author.removeAuthorsSuccessMessage'),
+                    type: 'success',
+                    lifeTime: 3
+                });
+            });
+        },
+        showPostsConnectedWithAuthor: function(name) {
+            let siteName = this.$store.state.currentSite.config.name;
+            localStorage.setItem('publii-posts-search-value', 'author:' + name);
+            this.$router.push('/site/' + siteName + '/posts');
+        },
+        saveOrdering (orderBy, order) {
+            this.orderBy = orderBy;
+            this.order = order;
+
+            this.$store.commit('setOrdering', {
+                type: 'authors',
+                orderBy: this.orderBy,
+                order: this.order
+            });
+        }
+    },
+    beforeDestroy () {
+        this.$bus.$off('authors-filter-value-changed');
+        this.$bus.$off('hide-author-item-editor');
+        this.$bus.$off('show-author-item-editor');
+    }
+}
+</script>
+
+<style scoped>
+@import "../css/collection-page.css";
+@import "../css/collection-sorting.css";
+
+.authors {
+    overflow-x: hidden!important;
+
+    &.no-scroll {
+        overflow: hidden;
+    }
+
+    .is-main-author {
+        color: var(--text-light-color);
+    }
+
+    .main-author-icon {
+        position: relative;
+        top: 2px;
+    }
+
+    .header {
+        .col {
+             align-items: center;
+             display: flex;
+
+             .col-sortable-title {
+                 cursor: pointer;
+             }
+        }
+    }
+
+    .author-slug {
+        color: var(--color-text-muted);
+        font-size: 11px;
+        margin-top: .2rem;
+    }
+}
+.title > a:focus-visible {
+    outline: 2px solid var(--input-border-focus);
+    outline-offset: 2px;
+}
+</style>

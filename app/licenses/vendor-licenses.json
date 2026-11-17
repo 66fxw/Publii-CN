@@ -1,0 +1,48 @@
+{
+    "chromium": {
+        "license": "BSD-3-Clause",
+        "homepage": "https://www.chromium.org/",
+        "licenseFile": "LICENSES.chromium.html",
+        "openExternally": true
+    },
+    "electron": {
+        "license": "MIT",
+        "homepage": "https://electronjs.org/"
+    },
+    "normalize.css": {
+        "license": "MIT",
+        "homepage": "https://github.com/necolas/normalize.css"
+    },
+    "locutus": {
+        "license": "MIT",
+        "homepage": "http://locutus.io/"
+    },
+    "hugerte": {
+        "license": "MIT",
+        "homepage": "https://hugerte.org/"
+    },
+    "libvips": {
+        "license": "LGPL-2.1-or-later",
+        "homepage": "https://github.com/libvips/libvips"
+    },
+    "jquery": {
+        "license": "MIT",
+        "homepage": "http://jquery.com/"
+    },
+    "feathericons": {
+        "license": "MIT",
+        "homepage": "https://feathericons.com"
+    },
+    "tabler-icons": {
+        "license": "MIT",
+        "homepage": "https://tabler-icons.io/"
+    },
+    "lucide": {
+        "license": "ISC",
+        "homepage": "https://lucide.dev/"
+    },
+    "transliteration": {
+        "license": "MIT",
+        "homepage": "https://github.com/dzcpy/transliteration"
+    }
+}

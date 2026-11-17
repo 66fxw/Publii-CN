@@ -1,0 +1,77 @@
+<template>
+    <section class="settings site-settings-app">
+        <div class="settings-wrapper">
+            <p-header :title="$t('theme.themes')">
+                <p-button
+                    :onClick="goBack"
+                    :disabled="installingExtension"
+                    appearance="clean"
+                    back
+                    slot="buttons">
+                    {{ $t('ui.goBack') }}
+                </p-button>
+
+                <p-button
+                    :onClick="installThemeFromFile"
+                    :disabled="installingExtension || installationPickerOpen"
+                    :loading="installingExtension"
+                    loading-layout="overlay"
+                    :aria-label="installingExtension ? $t('theme.installingTheme') : $t('theme.installTheme')"
+                    slot="buttons"
+                    icon="upload-file">
+                    {{ $t('theme.installTheme') }}
+                </p-button>
+            </p-header>
+
+            <div ref="content">
+                <themes-list
+                    :installing="installingExtension"
+                    :installationLoading="installationLoading"
+                    @install="installDroppedExtension('theme', $event)" />
+            </div>
+        </div>
+    </section>
+</template>
+
+<script>
+import ThemesList from './ThemesList';
+import GoToLastOpenedWebsite from './mixins/GoToLastOpenedWebsite';
+import ExtensionInstallation from './mixins/ExtensionInstallation';
+import ThemeUpload from './mixins/ThemeUpload';
+
+export default {
+    name: 'app-themes',
+    mixins: [
+        ExtensionInstallation,
+        GoToLastOpenedWebsite,
+        ThemeUpload
+    ],
+    components: {
+        'themes-list': ThemesList
+    },
+    data () {
+        return {};
+    },
+    mounted () {
+        this.$bus.$emit('sites-list-reset');
+    },
+    methods: {
+        installThemeFromFile () {
+            return this.pickExtensionFile('theme');
+        }
+    }
+}
+</script>
+
+<style scoped>
+
+.settings {
+    padding: var(--space-12) 0 var(--space-16);
+    width: 100%
+}
+
+.settings-wrapper {
+    margin: 0 auto;
+    max-width: var(--wrapper-width);
+}
+</style>

@@ -1,0 +1,177 @@
+<template>
+    <span 
+        :id="anchor"
+        :class="wrapperCssClasses">
+        <span
+            :class="cssClasses"
+            role="switch"
+            :aria-checked="isChecked ? 'true' : 'false'"
+            :aria-disabled="disabled ? 'true' : null"
+            :aria-label="accessibleLabel || label || null"
+            :aria-describedby="description ? 'switcher-description-' + _uid : null"
+            :tabindex="disabled ? -1 : 0"
+            @click="toggle"
+            @keydown.space.prevent="toggle"
+            @keydown.enter.prevent="toggle"></span>
+        {{ label }}
+        <span
+            v-if="description"
+            :id="'switcher-description-' + _uid"
+            hidden>{{ description }}</span>
+    </span>
+</template>
+
+<script>
+export default {
+    name: 'switcher',
+    props: {
+        value: {
+            type: [Boolean, Number]
+        },
+        label: {
+            default: '',
+            type: String
+        },
+        accessibleLabel: {
+            default: '',
+            type: String
+        },
+        description: {
+            default: '',
+            type: String
+        },
+        onToggle: {
+            default: () => false,
+            type: Function
+        },
+        lowerZindex: {
+            default: false,
+            type: Boolean
+        },
+        anchor: {
+            default: '',
+            type: String
+        },
+        disabled: {
+            default: false,
+            type: Boolean
+        },
+        customCssClasses: {
+            default: '',
+            type: String
+        }
+    },
+    data: function() {
+        return {
+            isChecked: !!this.value
+        };
+    },
+    computed: {
+        cssClasses: function() {
+            return {
+                'switcher': true,
+                'is-checked': this.isChecked,
+                'lower-zindex': this.lowerZindex,
+                'has-label': this.label,
+                'is-disabled': this.disabled
+            };
+        },
+        wrapperCssClasses () {
+            let cssClasses = { 
+                'has-label': this.label 
+            };
+
+            if (this.customCssClasses && this.customCssClasses.trim() !== '') {
+                this.customCssClasses.split(' ').forEach(item => {
+                    item = item.replace(/[^a-z0-9\-\_\s]/gmi, '');
+                    cssClasses[item] = true;
+                });
+            }
+
+            return cssClasses;
+        }
+    },
+    watch: {
+        value: function (newValue, oldValue) {
+            this.isChecked = !!newValue;
+        }
+    },
+    methods: {
+        toggle: function() {
+            if (this.disabled) {
+                return;
+            }
+
+            this.isChecked = !this.isChecked;
+            this.$emit('input', this.isChecked);
+            this.onToggle(this.isChecked);
+        },
+        getValue: function() {
+            return !!this.isChecked;
+        }
+    }
+}
+</script>
+
+<style scoped>
+
+.has-label {
+    font-size: var(--font-size-ui-md);
+    margin-right: 10px;
+}
+
+.switcher {
+    background: var(--input-border-dark);
+    border-radius: 20px;
+    cursor: pointer;
+    display: inline-block;
+    height: 18px;
+    margin-right: var(--space-2);
+    position: relative;
+    top: 3px;
+    transition: all .28s ease;
+    width: 32px;
+    z-index: 1;
+
+    &.lower-zindex {
+        z-index: 0;
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--input-border-focus);
+        outline-offset: 2px;
+    }
+
+    &:after {
+        position: absolute;
+        left: 2px;
+        top: 2px;
+        display: block;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        background: var(--input-bg-lightest);
+        content: '';
+        transition: all .28s ease;
+        
+    }
+
+    &:active:after {
+        transform: scale(0.8);
+    }
+
+    &.is-checked {
+        background: var(--input-border-focus);
+
+        &:after {
+            left: 16px;
+            background: var(--input-bg-lightest);
+        }
+    }
+
+    &.is-disabled {
+        opacity: .5;
+        pointer-events: none;
+    }
+}
+</style>

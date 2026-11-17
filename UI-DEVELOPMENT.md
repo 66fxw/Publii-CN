@@ -1,0 +1,444 @@
+# UI development guide
+
+This is the implementation companion to [DESIGN.md](./DESIGN.md). `DESIGN.md` defines the visual contract and accepted design decisions. This guide explains how to apply that contract in Vue templates and application-owned CSS.
+
+The current normalization covers the main application renderer and shared visual roles used by editor chrome. Editor-owned layouts, block editor internals, vendor styles, generated-site themes, and external plugin styles are separate scopes.
+
+## Sources of truth
+
+| Concern | Source |
+| --- | --- |
+| Visual rules and accepted design decisions | [`DESIGN.md`](./DESIGN.md) |
+| Technical CSS foundations | [`app/src/css/css-variables.css`](./app/src/css/css-variables.css) |
+| Complete application appearances | [`app/src/css/appearances/`](./app/src/css/appearances/) |
+| Shared component implementations and prop validators | [`app/src/components/basic-elements/`](./app/src/components/basic-elements/) |
+| Globally registered component names | [`app/src/main.js`](./app/src/main.js) |
+| Application appearance runtime | [`app/src/helpers/app-appearance.js`](./app/src/helpers/app-appearance.js) |
+| Automated contract checks | [`build/scripts/audit-design-system.js`](./build/scripts/audit-design-system.js) |
+| Approved local color exceptions | [`build/scripts/design-system-baseline.json`](./build/scripts/design-system-baseline.json) |
+
+When this guide and a component disagree, treat the component's validated props as the executable API and update this guide in the same change. A visual-contract change must also update `DESIGN.md`.
+
+## Working rules
+
+1. Reuse a shared component before adding view-local controls or classes.
+2. Express component meaning through props. Do not pass space-delimited class names as a variant API.
+3. Use semantic CSS tokens in components. Do not consume private `--palette-*` variables outside an appearance file.
+4. Preserve the same semantic token names in every application appearance and its light and dark schemes. Each scheme owns its literal values.
+5. Keep one-off optical corrections and structural dimensions local. Do not create a global token for every number.
+6. Do not change `data-theme`, `data-app-appearance`, `data-color-scheme`, or `data-workspace-accent` directly from a component.
+7. Run the design-system audit before committing renderer UI changes.
+
+## Using CSS tokens
+
+Application-owned tokens are loaded globally by `App.vue`. `app/src/css/css-variables.css` contains appearance-independent technical foundations such as structural dimensions, global layers, editor bridges, and runtime values. Files in `app/src/css/appearances/` provide the complete visual language for each `appAppearance`: shared typography, spacing, shape, and motion values together with independently tuned light and dark palettes. Scoped component styles consume the resulting tokens directly.
+
+### Colors
+
+Choose a token by its role, not by its current color:
+
+```css
+.panel {
+    background: var(--bg-secondary);
+    border: 1px solid var(--color-border-default);
+    color: var(--text-primary-color);
+}
+
+.panel-note {
+    color: var(--text-light-color);
+}
+
+.panel-link {
+    color: var(--link-primary-color);
+}
+
+.panel-error {
+    color: var(--color-danger);
+}
+```
+
+Common families are:
+
+| Need | Token family |
+| --- | --- |
+| Page and panel surfaces | `--bg-*`, `--color-surface-*` |
+| Text and headings | `--text-*`, `--headings-color`, `--label-color` |
+| Borders | `--color-border-*`, `--border-light-color` |
+| Links | `--link-*` |
+| Icons | `--icon-*-color`, `--color-icon-*` |
+| Form controls | `--input-*` |
+| Buttons | `--button-*` |
+| Status | `--color-danger`, `--color-success`, `--color-warning` |
+| Collections | `--collection-*` |
+| Sidebar, tabs, popups | their named component-role tokens |
+
+For transparency, derive the alpha color from the existing semantic color with relative OKLCH syntax:
+
+```css
+background: oklch(from var(--color-primary) l c h / 17%);
+box-shadow: 0 2px 6px oklch(from var(--black) l c h / 15%);
+```
+
+Do not introduce separate `*-rgb` channel tokens for alpha composition.
+
+Private `--palette-brand-*` and `--palette-neutral-*` values are authored in OKLCH. Do not use them in a component; they are private inputs to semantic roles and may change when an application appearance is retuned.
+
+Before adding a color token:
+
+1. Check whether an existing semantic role describes the use.
+2. Add a new global role only when it is shared, changes with application appearance, or is an established reusable foundation.
+3. Define the role in both the light and dark scheme blocks.
+4. Consume the semantic role from components; keep palette variables private.
+5. Update `DESIGN.md` when the new role changes the visual contract.
+6. Run `npm run audit:design-system`.
+
+Do not make the audit pass by casually increasing the color-literal baseline. That file records accepted existing debt, not a list of colors available for new UI.
+
+### Spacing
+
+Use the shared spacing scale for `margin`, `padding`, and `gap` when the exact value exists:
+
+| Token | Value |
+| --- | --- |
+| `--space-1` | `0.25rem` |
+| `--space-2` | `0.5rem` |
+| `--space-3` | `0.75rem` |
+| `--space-4` | `1rem` |
+| `--space-6` | `1.5rem` |
+| `--space-8` | `2rem` |
+| `--space-12` | `3rem` |
+| `--space-16` | `4rem` |
+
+```css
+.toolbar {
+    display: flex;
+    gap: var(--space-4);
+    margin-bottom: var(--space-8);
+    padding: var(--space-6) var(--space-8);
+}
+```
+
+`--space-unit` is available for proportional calculations. A value such as `1.3rem` may remain local when it is an intentional optical correction and changing it would alter the current layout. Heights, widths, offsets, icon dimensions, and similar structural measurements do not become spacing tokens merely because their value also exists in the spacing scale.
+
+### Typography
+
+Use the shared UI typography tokens:
+
+```css
+.metadata {
+    font-family: var(--font-family-sans);
+    font-size: var(--font-size-ui-sm);
+    font-weight: var(--font-weight-regular);
+    line-height: var(--line-height-base);
+}
+```
+
+Available UI sizes are `--font-size-ui-xs`, `--font-size-ui-sm`, `--font-size-ui-md`, `--font-size-ui-lg`, and `--font-size-ui-xl`. Available weights are `--font-weight-light`, `--font-weight-regular`, `--font-weight-medium`, `--font-weight-semibold`, and `--font-weight-bold`.
+
+Use `--font-family-serif` and `--font-family-mono` only when the content role requires them. Persisted editor font preferences use the generic values `sans-serif` and `serif` because editor documents may not load the application token sheet.
+
+### Shape, depth, motion, and layers
+
+Use `--radius-base` for ordinary rectangular controls and containers. Circles and fully rounded controls may keep a component-owned radius.
+
+Fields draw their focus ring with `--input-shadow-focus` and their invalid ring with `--input-shadow-invalid`; both share one inset shape, and the invalid ring stays visible while the field is focused. Flag a shared `text-input`, `dropdown`, or `file-select` with the `invalid` prop, which sets the `is-invalid` class and `aria-invalid` for you; a plain field takes `aria-invalid="true"` or sits inside an `is-invalid` wrapper, which the global rule in `forms.css` styles the same way.
+
+Use `--shadow-sm`, `--shadow-md`, and `--shadow-list-hover` for their documented elevation roles. Use `--shadow-md-up` for the upward-opening `ButtonDropdown` variant; it preserves each color scheme's medium shadow while reversing its vertical offsets. Keep a unique effect local rather than adding a global shadow token without a shared role.
+
+Use `--transition-default` for the standard UI transition. Use the named `--layer-*` tokens for viewport-level surfaces. Numeric `z-index` values are allowed only for local sibling ordering inside a component-owned stacking context.
+
+## Application appearances
+
+These names are not interchangeable:
+
+| Name | Meaning |
+| --- | --- |
+| `siteTheme` | Theme used by a generated website |
+| `appAppearance` | Named visual preset of the Publii application |
+| `colorScheme` | Resolved `light` or `dark` application scheme |
+| `system` | User preference that resolves to a color scheme |
+
+Use `applyAppAppearance` from `app/src/helpers/app-appearance.js` when runtime appearance attributes must be applied. `data-theme` remains a compatibility attribute; new components must not treat it as the owner of application appearance.
+
+Every `appAppearance` has one CSS file whose filename matches its registered value. It must define:
+
+1. the shared visual-language tokens under `data-app-appearance`;
+2. the complete semantic and private palette contract for `light`;
+3. the same contract, independently tuned, for `dark`;
+4. preview tokens and complete light/dark private brand-palette overrides for every registered non-default `workspaceAccent`.
+
+`workspaceAccent` is a per-site preference. It changes only the private brand palette inside the active application appearance; it does not change neutral, status, typography, spacing, or component contracts and never affects the generated website. The default accent uses the appearance's base brand palette. Missing, obsolete, or unsupported persisted values normalize to `default`. Publii registers its first seven chromatic accents as `default`, `indigo`, `violet`, `magenta`, `crimson`, `rose`, and `orange`, followed by the more tonal `emerald`, `petrol`, `navy`, `graphite`, and `midnight` set; the settings UI must preserve registry order rather than maintain a second list.
+
+Every new non-default accent must pass the automated WCAG AA contrast checks for semantic controls and links in both color schemes, including normal and hover states, dark-scheme synchronization controls, and visible focus indicators. The original default blue is a documented visual-compatibility exception and must not be used as the contrast target for new accents.
+
+To add an appearance, create its file in `app/src/css/appearances/`, register it and its supported accents in `app-appearance.js`, load it after `css-variables.css` in both `App.vue` and `prepare-editor-css.js`, and run the design-system audit. Components must not require appearance-specific class or selector overrides.
+
+## Shared components
+
+The basic elements registered in `app/src/main.js` are globally available in Vue templates. Do not import them again into individual view components. Functional props such as callbacks and data remain documented by each component; the table below lists the normalized visual contracts.
+
+| Component | Current visual contract |
+| --- | --- |
+| `p-button` | `intent`, `appearance`, `size`, `width`, `layout`; independent state booleans |
+| `btn-dropdown` | `intent="default|primary"`, `button-icon`, `preview-icon`, `is-reversed`, `disabled` |
+| `action-menu` | `items` array of `{ label, value, icon, intent="default|danger", disabled, visible, onClick }` or `{ separator: true }`; `label`; `icon`; `size="default|small"`; `align="left|right"`; `disabled` |
+| `text-input` | native `type`; visual `size="default|small"`; `keyboard-blocked` and `invalid` booleans |
+| `field` | `spacing="normal|small"`; independent label-layout booleans |
+| `image-upload` | `size="default|small"` |
+| `progress-bar` | `intent="default|success|danger|warning"` |
+| `progress-orb` | `phase="idle|rendering|connecting|uploading|success|warning|error"`; numeric `progress`; independent `indeterminate` boolean; `message`; `size="default|small"`; `appearance="default|flat"` |
+| `overlay` | `appearance="default|drop-zone"` |
+| `icon` | named `size`; `non-interactive` boolean; controlled custom classes when required |
+| `app-illustration` | allowlisted `name`; optional `scale` and `translate-y`; one inline, token-driven SVG symbol per illustration |
+| `collection` | numeric `columns` |
+| `collection-cell` | `variant="titles|assignment|publish-dates|modification-dates|authors|actions|menu|identifier"`; `menu` is the trailing cell that holds a row `action-menu`, `identifier` is the centred column for IDs and counts with a shared minimum width and the regular cell padding; alignment and size props become inline styles only when they differ from the defaults |
+| `collection-row` | semantic row states: `main-author`, `expanded` (an expanded row keeps the edited-row highlight) |
+| `tabs` | `orientation="vertical|horizontal"`; independent `scrollable` boolean |
+
+The prop validators in the component files are the complete accepted-value lists.
+
+### Empty-state illustrations
+
+Add each illustration once to `app/src/assets/svg/svg-map-empty-states.svg` under the same base name accepted by `app-illustration`. Use existing semantic roles such as `--bg-secondary`, `--color-surface-*`, `--color-border-*`, `--color-text-faint`, and `--color-primary` for its paint values. Because the selected symbol is rendered inline, those custom properties update with the active application appearance and workspace accent. Do not add `-default` or `-dark` symbol pairs, hardcoded theme selectors, or theme-change listeners to the component.
+
+### Window commands
+
+Keep immediate window-management commands out of Application Settings. The generic `New Window` command remains available from the application menu, while the site selector owns the contextual `Open in new window` action for a specific website: it lives in the row's `action-menu` and behind Cmd-click (macOS), Ctrl-click, or middle-click on the website name. Both routes must reuse the allowlisted preload IPC command and let the main process validate the optional website identifier, enforce window ownership, and create the `BrowserWindow`.
+
+### Buttons
+
+Button concerns are independent:
+
+| Concern | Prop | Accepted values |
+| --- | --- | --- |
+| Meaning | `intent` | `default`, `primary`, `danger`, `success` |
+| Presentation | `appearance` | `default`, `secondary`, `outline`, `popup-cancel`, `clean`, `clean-inverse`, `clean-muted`, `light` |
+| Size | `size` | `default`, `small`, `medium` |
+| Width | `width` | `auto`, `quarter`, `half`, `full` |
+| Layout | `layout` | `inline`, `bottom` |
+| Icon treatment | `icon`, `icon-size`, `icon-only`, `icon-tone` | `icon-size`: `xs`, `s` (default); `icon-tone`: `default`, `primary` |
+| State | booleans | `active`, `back`, `disabled`, `disabled-with-events`, `loading`, `square` |
+
+`p-button` renders a native `<button type="button">`, so it is reachable with Tab and activates with Enter and Space. `disabled` maps to the native `disabled` attribute; `disabled-with-events` keeps the control interactive and exposes `aria-disabled` instead; `loading` exposes `aria-busy`. Keyboard focus shows the shared `--input-border-focus` ring through `:focus-visible`, and pointer clicks leave no lingering focus or hover style.
+
+Disabled button surfaces use `--button-disabled-bg`; keep this role separate from popup cancel hover styling. The light scheme uses `--palette-neutral-10`, while the dark scheme retains its existing disabled background.
+
+`btn-dropdown` is a split button: its main action and its menu toggle are separate native buttons, and the open list is a `role="menu"` of native `menuitem` buttons. Arrow Down on either part opens the list, Arrow Up and Down move between items, Home and End jump to the ends, Escape closes the list and returns focus to the toggle, and Tab closes it while moving on. Choosing an item with the keyboard returns focus to the main action; pointer interaction keeps the previous behaviour and shows no focus ring.
+
+Do not rebuild the old space-delimited `type` API:
+
+```vue
+<!-- Correct -->
+<p-button
+    :onClick="createBackup"
+    intent="primary"
+    icon="plus"
+    :disabled="operationInProgress"
+    :loading="operationInProgress">
+    {{ $t('file.createBackup') }}
+</p-button>
+```
+
+`clean` is the text button for inline actions and uses the link roles. `clean-muted` is the low-emphasis text button for dismiss actions such as Cancel or OK placed under a primary action; it uses the dialog cancel roles, `--popup-btn-cancel-color` and `--popup-btn-cancel-hover-color`, so it never competes with the primary action or the accent. Reserve `popup-cancel` for dialog footers, where its surface and top border belong.
+
+The `icon` prop automatically enables leading-icon layout. Do not pass a separate `icon` class or state. `disabled` controls availability; `loading` controls the preloader. Dynamic state belongs in the relevant boolean prop rather than in a conditional variant string.
+
+### Action menus
+
+`action-menu` is the overflow control for row-level and card-level actions. It renders an icon-only native button that opens a `role="menu"` list of native `menuitem` buttons and follows the same keyboard model as `btn-dropdown`: Arrow Down or Arrow Up opens the list and moves between items, Home and End jump to the ends, Escape closes the list and returns focus to the trigger, Tab closes it while moving on, and pointer interaction shows no focus ring. An open menu closes when another one opens, when the document body is clicked, or when anything scrolls or the window resizes. The list is positioned against the viewport, so scrolling containers never clip it, and it flips above the trigger on its own near the bottom of the viewport. Do not place the trigger inside an ancestor with `transform` or `will-change: transform`, which would turn that ancestor into the list's containing block.
+
+Describe each action as data rather than markup:
+
+```vue
+<action-menu
+    size="small"
+    :items="[
+        { label: $t('menu.renameMenu'), value: 'rename', icon: 'edit', onClick: startRename },
+        { separator: true },
+        { label: $t('menu.deleteMenu'), value: 'delete', icon: 'trash', intent: 'danger', onClick: deleteMenu }
+    ]" />
+```
+
+`intent="danger"` is the only item variant. `disabled` and `visible`, a boolean or a function, control availability. The component calls the item's `onClick` and also emits `select` with the chosen `value`. Use `size="small"` inside dense rows and `align="left"` when the trigger sits at the left edge of its container. The trigger label defaults to the shared "Other options" string; pass `label` when the menu belongs to a named object.
+
+### Prompt dialogs
+
+The shared `confirm` dialog accepts an optional plain-text `title`, rendered as an `h1` using `popup-common.css`. Keep the body in `message` and provide `dialogLabel` for managed keyboard and focus behavior. Omitting `title` preserves the existing message-only layout.
+
+An optional `link` object (`label`, router `to`, and optional `onClick`) adds a navigation link below the message. Its callback runs before navigation so callers can preserve an unsaved draft; following the link dismisses the dialog without confirming its main action.
+
+The shared `confirm` dialog accepts an optional `validate` callback together with `hasInput`. It receives the current value and returns `true` or an error message. The dialog shows the message under the field, keeps itself open, and clears the message as soon as the value changes. Use it instead of closing the dialog and reporting the problem in a toast:
+
+```js
+this.$bus.$emit('confirm-display', {
+    hasInput: true,
+    message: this.$t('menu.provideNameForNewMenu'),
+    okLabel: this.$t('menu.createNewMenu'),
+    validate: name => this.validateMenuName(name),
+    okClick: name => this.addNewMenu(name)
+});
+```
+
+### Form values
+
+`dropdown`, `radio-buttons`, and `switcher` use `value` through `v-model` as their single value contract:
+
+```vue
+<dropdown
+    v-model="selectedProvider"
+    :items="providers" />
+
+<radio-buttons
+    v-model="importType"
+    name="import-type"
+    :items="importTypes" />
+
+<switcher v-model="enabled" />
+```
+
+Do not use the retired `selected` or `checked` initialization aliases on these components.
+
+`switcher` is a keyboard-operable `role="switch"` control: it is focusable, exposes `aria-checked`, toggles with Space or Enter, ignores input while `disabled`, and shows the shared `--input-border-focus` ring on keyboard focus.
+
+`checkbox` is intentionally different. It is a controlled list-selection primitive and still uses `checked`, `value`, and `on-click`:
+
+```vue
+<checkbox
+    :value="item.id"
+    :checked="isChecked(item.id)"
+    :onClick="toggleItem" />
+```
+
+`customCssClasses` remains available only where schema-driven theme or plugin settings require an extension point. Do not use it as the normal way to create component variants.
+
+### Site theme field
+
+Site Settings selects the website theme with `themes-dropdown`, which reads the `siteThemesState` store getter. The getter merges the theme library (`location: 'app'`) with the site copies of the current website and reports, for the current theme, whether the library or the Publii marketplace holds a newer version. The dropdown stays a value control: an empty value keeps the current theme (its placeholder option names it), `use-<directory>` switches to an existing site copy, and `install-use-<directory>` copies a library theme into the site or updates the current copy from the library. Options describe states, never actions, and every theme appears once. The value is applied by the regular settings save through `changeTheme()` in the back-end, and the field shows a note while a change is pending.
+
+Commands live beside the field. The "Update to v.X" button only selects the update option, and the action menu's "Reinstall <name> from your theme library" (offered when the library holds the same or an older version) selects the same `install-use-<directory>` value, which the dropdown then lists under "Reinstall" only while it is pending; the field's `action-menu` installs a theme file into the library (shared `ThemeUpload` mixin; a component may define `themeUploadedHint(data)` to append the next step to the success toast), opens the theme library, opens the marketplace, and removes unused site copies. Removal is destructive, so it asks through the shared `confirm` dialog and then calls the dedicated `app-site-theme-remove` IPC, which deletes an unused copy (never the active theme) and returns the refreshed theme list; the settings form itself is not saved. A marketplace update is reported with the `msg msg-small msg-icon msg-info` block and its download and install links; the notifications feed's `free` flag decides whether the link is a direct download or opens the marketplace account downloads page. Do not add action verbs back into the option list.
+
+### Synchronization indicator
+
+`progress-orb` is the phase-aware activity indicator of the synchronization popup. It shows one phase at a time through the validated `phase`, keeps real progress visible in its ring through the numeric `progress`, switches the ring to a spinning arc with the independent `indeterminate` boolean, and prints the stage text passed as `message` under the disc, the same role the `progress-bar` message has. The drawn part is `aria-hidden`; the message is its only text. It is drawn with the empty-state illustration material: the disc uses `--bg-secondary`, `--color-surface-subtle`, and `--color-border-muted`, while the glow, shadow, ring, icon, and particles derive from `--color-primary` and the status roles through relative OKLCH and `color-mix()`, so the indicator follows the workspace accent and the color scheme without overrides. Its motion is CSS-only transform and opacity and stops under `prefers-reduced-motion`. Consumers own the surrounding layout: pass a class for margins and do not restyle its internals.
+
+`appearance="flat"` retains only the ring and the supplied icon for compact layouts such as preview preparation and thumbnail regeneration. Both use `progress-status.css` for the orb, heading, percentage and status text. The flat idle state is neutral. Regeneration starts from the page header; its small Cancel action sits at the right of the status panel, below the percentage. Focus moves from the header action to Cancel when the run starts, and returns when it ends. A cancelled run retains its processed count and a static neutral orb; Regenerate again starts a new run.
+
+The synchronization popup maps its own state to the phases: `idle` before the sync starts, `rendering` while the site is generated, `connecting` until the first upload progress arrives, `uploading` afterwards, then `success`, `warning` for a sync that finished with issues, and `error` for a failed connection or render. The minimized popup keeps `progress-bar` because it lives over the sidebar.
+
+### Collections
+
+The parent supplies the column count, cells supply validated visual roles, and rows expose semantic states:
+
+```vue
+<collection :columns="4">
+    <collection-row
+        v-for="item in items"
+        :key="item.id"
+        slot="content"
+        :main-author="item.id === 1">
+        <collection-cell variant="titles">
+            {{ item.name }}
+        </collection-cell>
+    </collection-row>
+</collection>
+```
+
+For the main author, `:main-author="true"` causes `CollectionRow` to apply its internal `is-main-author` class. The consumer expresses the semantic state; the shared component owns the CSS class.
+
+## Legacy-to-current migration reference
+
+Do not introduce the legacy forms in new code. The automated audit rejects the retired component props.
+
+| Legacy API | Current API |
+| --- | --- |
+| `p-button type="primary"` | `intent="primary"` |
+| `p-button type="green|success"` | `intent="success"` |
+| `p-button type="danger|error|delete"` | `intent="danger"` |
+| `p-button type="secondary"` | `appearance="secondary"` |
+| `p-button type="outline"` | `appearance="outline"` |
+| `p-button type="cancel-popup"` | `appearance="popup-cancel"` |
+| `p-button type="clean"` | `appearance="clean"` |
+| `p-button type="clean-invert"` | `appearance="clean-inverse"` |
+| `p-button type="light"` | `appearance="light"` |
+| `p-button type="small|medium"` | `size="small|medium"` |
+| `quarter-width`, `half-width`, `full-width` in button `type` | `width="quarter|half|full"` |
+| `bottom` in button `type` | `layout="bottom"` |
+| `preloader` in button `type` | `:loading="condition"` |
+| `disabled`, `disabled-with-events`, `active`, `back` in button `type` | corresponding boolean prop |
+| `no-border-radius` in button `type` | `square` boolean prop |
+| `icon` in button `type` | derived from the `icon` prop |
+| `only-icon` in button `type` | `icon-only` boolean prop |
+| `only-icon-color` in button `type` | `icon-only` plus `icon-tone="primary"` |
+| `btn-dropdown buttonColor="green"` | `intent="primary"` |
+| `btn-dropdown type="is-reversed"` | `is-reversed` boolean prop |
+| `text-input properties="is-small"` | `size="small"` |
+| `text-input properties="keyboard-blocked"` | `keyboard-blocked` boolean prop |
+| `text-input ariaInvalid`, or `:class="{ 'is-invalid': … }"` on `text-input`, `dropdown`, `file-select` | `invalid` boolean prop, which sets both the class and `aria-invalid` |
+| `image-upload type="small"` | `size="small"` |
+| `icon properties="not-clickable"` | `non-interactive` boolean prop |
+| `collection itemsCount` | `columns` |
+| `collection formIsOpened` | removed; the unused collection-level layout state has no replacement |
+| `collection-cell type` | `variant` |
+| `collection-row cssClasses` | a named semantic state prop, currently `main-author` |
+| `dropdown selected` | `v-model` / `value` |
+| `radio-buttons selected` | `v-model` / `value` |
+| `switcher checked` | `v-model` / `value` |
+| `tabs isHorizontal` | `orientation="horizontal"` |
+| `tabs isScrollable` | `scrollable` boolean prop |
+| `overlay hasBorder` plus `isBlue` | `appearance="drop-zone"` |
+| `progress-bar color="blue|green|red|orange"` | `intent="default|success|danger|warning"` |
+| `progress-bar stopped` | removed; it produced no visual behavior |
+| `fields-group type="danger"` | removed unused variant; use an explicit status component when status communication is required |
+
+`separator type` is a deliberate temporary exception because its values can come from persisted theme and plugin settings schemas. Do not copy that string-based API into other components. Its normalization requires a versioned schema migration across every owner.
+
+## Scope boundaries
+
+- Application design tokens belong to the Publii renderer. Generated-site themes must use their own theme contracts.
+- External plugin option styles are not automatically governed by the application token file.
+- Editor-owned CSS under `app/src/css/editor/`, block editor internals, post editor internals, and vendor CSS remain outside the completed component-normalization phase.
+- Shared editor chrome may consume application semantic tokens, but editor content typography and layout remain independently owned.
+- Keep Electron's renderer security boundary unchanged. UI work must not enable Node integration or bypass the preload bridge.
+
+## Extending the system
+
+Extend an existing primitive when the new behavior has the same semantic role. Add a new component under `app/src/components/basic-elements/` only when it represents a reusable UI contract; keep screen-specific composition with its owning view.
+
+A shared component must:
+
+- expose separate, typed props for meaning, appearance, size, layout, and state when those concerns apply;
+- validate every string enum;
+- own its internal CSS classes instead of asking consumers to construct them;
+- use semantic tokens and support both color schemes without view-level theme overrides;
+- preserve `v-model` conventions for value controls;
+- be registered in `app/src/main.js` only when it is intended to be globally available;
+- update this guide when it adds or changes a public visual contract.
+
+Do not add a compatibility prop unless external or persisted data prevents an atomic migration. Document the owner and removal condition for every compatibility exception.
+
+## Verification
+
+Run these checks from the repository root:
+
+```bash
+npm run audit:design-system
+npm test
+npm run prod
+```
+
+Use them proportionally:
+
+- Run `npm run audit:design-system` for every renderer styling or shared-component change.
+- Run `npm test` before merging; it includes the design-system audit and backend tests.
+- Run `npm run prod` after changing shared tokens, primitives, application appearance behavior, or webpack-visible style imports.
+- Perform runtime QA in light and dark schemes when a change affects a shared visual role or component.
+
+Before opening a pull request, confirm that:
+
+- the UI uses an existing shared component where appropriate;
+- new component behavior is represented by typed props rather than class strings;
+- component CSS uses semantic roles rather than palette values or new literals;
+- light and dark schemes define the same shared semantic roles;
+- spacing and typography use canonical tokens where their exact values apply;
+- `DESIGN.md` and this guide were updated when their public contracts changed;
+- the design-system audit passes.

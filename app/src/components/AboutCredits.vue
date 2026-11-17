@@ -1,0 +1,96 @@
+<template>
+    <div class="credits">
+        <div class="credits-wrapper">
+            <div class="heading">
+                <h1 class="title">
+                    {{ $t('ui.credits') }}
+                </h1>
+
+                <p-button
+                    :onClick="goBack"
+                    appearance="clean"
+                    back
+                    slot="buttons">
+                    {{ $t('ui.goBack') }}
+                </p-button>
+            </div>
+
+            <p class="credits-intro">{{ $t('publii.creditsIntro') }}</p>
+            
+            <fields-group>
+               <credits-list
+                   :licenses="licenses" />
+            </fields-group>
+        </div>
+    </div>
+</template>
+
+<script>
+import { mapGetters } from 'vuex';
+import licenses from '../../licenses/all-licenses.json';
+import AboutCreditsList from './AboutCreditsList';
+import GoToLastOpenedWebsite from './mixins/GoToLastOpenedWebsite';
+
+export default {
+    name: 'about-credits',
+    mixins: [GoToLastOpenedWebsite],
+    components: {
+        'credits-list': AboutCreditsList
+    },
+    data: function() {
+        return {
+            licenses
+        };
+    },
+    computed: {
+        ...mapGetters([
+            'appVersion'
+        ])
+    },
+    mounted () {
+        this.$bus.$emit('sites-list-reset');
+    }
+}
+</script>
+
+<style scoped>
+
+.credits {
+    padding: var(--space-12) 0 var(--space-16);
+    width: 100%;
+
+    .heading {
+        margin-bottom: calc(10 * var(--space-unit));
+        width: 100%;
+
+        &:after {
+
+            content: " ";
+
+            display: block;
+
+            clear: both;
+
+        }
+
+        .title {
+            float: left;
+            margin: 0;
+        }
+
+        .button {
+            float: right;
+            margin-top: -.5rem;
+        }
+    }
+}
+
+.credits-wrapper {
+    margin: 0 auto;
+    max-width: var(--wrapper-width);
+}
+
+.credits-intro {
+    margin: -2.5rem 0 var(--space-16) 0;
+}
+</style>

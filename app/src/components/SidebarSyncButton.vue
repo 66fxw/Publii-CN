@@ -1,0 +1,716 @@
+<template>
+    <div
+        :class="{
+            'sidebar-sync': true,
+            'sidebar-sync-in-progress': syncInProgress
+        }">
+
+        <div class="sidebar-preview-actions">
+            <button
+                type="button"
+                class="sidebar-preview-control sidebar-preview-trigger"
+                @click="renderPreview">
+                {{ $t('sync.previewSite') }}
+            </button>
+
+            <button
+                type="button"
+                class="sidebar-preview-control sidebar-preview-settings"
+                :aria-label="$t('localPreview.settings')"
+                aria-haspopup="dialog"
+                v-tooltip="{
+                    title: $t('localPreview.settings'),
+                    text: !localPreviewIsEnabled
+                        ? $t('localPreview.serverDisabled')
+                        : localPreviewIsRunning
+                            ? $t('localPreview.serverIsRunning')
+                            : $t('localPreview.serverStopped'),
+                    offsetX: '75%'
+                }"
+                @click="showLocalPreviewPopup">
+                <span
+                    class="sidebar-preview-settings-icon"
+                    aria-hidden="true">
+                    <icon
+                        name="settings"
+                        custom-width="18"
+                        custom-height="18"
+                        non-interactive />
+                    <span
+                        v-if="localPreviewIsRunning"
+                        class="sidebar-preview-running-indicator"></span>
+                </span>
+            </button>
+        </div>
+
+        <a
+            v-if="$store.state.app.config.enableAdvancedPreview"
+            href="#"
+            class="sidebar-preview-link"
+            @click="renderFiles">
+            {{ $t('sync.generatePreviewFiles') }}
+        </a>
+
+        <a
+            href="#"
+            :class="cssClasses"
+            v-tooltip="{
+                text: status,
+                disabled: !isSyncLabelTruncated,
+                describe: false,
+                offsetX: '75%'
+            }"
+            @click.prevent.stop="syncWebsite"
+        >
+            <span v-pure-html="icon" class="sidebar-sync-link-icon"></span>
+            <span
+                ref="syncLabel"
+                class="sidebar-sync-link-label">
+                {{ status }}
+            </span>
+        </a>
+        <component
+            :is="websiteUrl ? 'a' : 'span'"
+            v-if="hasSyncDate"
+            :href="websiteUrl || null"
+            v-tooltip="{
+                text: websiteLinkTooltip,
+                disabled: !websiteUrl,
+                offsetX: '75%'
+            }"
+            :target="websiteUrl ? '_blank' : null"
+            class="sidebar-sync-date"
+            :rel="websiteUrl ? 'noreferrer noopener' : null">
+                <template v-if="!hasManualDeploy">
+                    {{ $t('sync.lastSync') }}: <span>{{ syncDate }}</span>
+                </template>
+                <template v-if="hasManualDeploy">
+                    {{ $t('sync.lastRendered') }}: <span>{{ syncDate }}</span>
+                </template>
+        </component>
+    </div>
+</template>
+
+<script>
+import Tooltip from '../helpers/tooltip.js';
+import Utils from '../helpers/utils.js';
+import { checkSiteSecrets } from '../helpers/site-secrets-check.js';
+import SidebarIcons from './configs/sidebar-icons.js';
+
+export default {
+    directives: {
+        tooltip: Tooltip
+    },
+    name: 'sidebar-sync-button',
+    data: function() {
+        return {
+            icon: SidebarIcons.DEFAULT,
+            redirectTo: 'sync',
+            isSyncLabelTruncated: false,
+            currentYear: new Date().getFullYear()
+        };
+    },
+    computed: {
+        cssClasses: function() {
+            return {
+                'sidebar-sync-link': true
+            };
+        },
+        localPreviewIsRunning: function() {
+            return this.$store.state.app.localPreview.running;
+        },
+        localPreviewIsEnabled: function() {
+            return this.$store.state.app.config.previewServerEnabled !== false;
+        },
+        status: function() {
+            let status = this.$store.state.components.sidebar.status;
+
+            if(status !== false) {
+                if(!this.checkDeploymentConfig()) {
+                    this.redirectTo = 'site-settings';
+                    this.icon = SidebarIcons.NO_CONFIG;
+                    return this.$t('sync.provideAccessData');
+                }
+
+                switch(status) {
+                    case 'preparing':
+                        this.redirectTo = 'sync';
+                        this.icon = SidebarIcons.PREPARING;
+                        return this.$t('sync.preparingFiles');
+                    case 'prepared':
+                        this.redirectTo = 'sync';
+                        this.icon = SidebarIcons.PREPARED;
+                        return this.$t('sync.preparedToUpload');
+                    case 'not-prepared':
+                        this.redirectTo = 'sync';
+                        this.icon = SidebarIcons.NOT_PREPARED;
+                        return this.$t('sync.preparationError');
+                    case 'syncing':
+                        this.redirectTo = 'sync';
+                        this.icon = SidebarIcons.SYNCING;
+                        return this.$t('sync.syncInProgress');
+                    case 'synced':
+                    case 'not-synced':
+                        this.redirectTo = 'sync';
+                        this.icon = SidebarIcons.NOT_SYNCED;
+                        return this.$t('sync.syncYourWebsite');
+                }
+            } else if(!this.checkDeploymentConfig()) {
+                this.redirectTo = 'site-settings';
+                this.icon = SidebarIcons.PROVIDE_ACCESS;
+                return this.$t('sync.configureServer');
+            } else {
+                this.redirectTo = 'sync';
+                this.icon = SidebarIcons.SYNC;
+                return this.$t('sync.syncYourWebsite');
+            }
+
+            this.redirectTo = 'sync';
+            return this.$t('sync.siteIsInSync');
+        },
+        hasSyncDate: function() {
+            if(!this.$store.state.currentSite.config) {
+                return false;
+            }
+
+            return !!(this.$store.state.currentSite.config.syncDate);
+        },
+        syncDate: function() {
+            const date = new Date(this.$store.state.currentSite.config.syncDate);
+            const language = this.$store.getters.languages.find(language => language.directory === this.$i18n.locale);
+            const locale = language && language.momentLocale ? language.momentLocale : 'en-gb';
+            const use24HourClock = this.$store.state.app.config.timeFormat == 24;
+            const options = {
+                day: 'numeric',
+                month: 'short',
+                hour: use24HourClock ? '2-digit' : 'numeric',
+                minute: '2-digit',
+                hourCycle: use24HourClock ? 'h23' : 'h12'
+            };
+
+            if (date.getFullYear() !== this.currentYear) {
+                options.year = 'numeric';
+            }
+
+            return new Intl.DateTimeFormat(locale, options).format(date);
+        },
+        hasManualDeploy () {
+            return this.$store.state.currentSite.config.deployment.protocol === 'manual';
+        },
+        websiteUrl () {
+            const config = this.$store.state.currentSite.config;
+
+            if (!config || (config.deployment && config.deployment.relativeUrls)) {
+                return '';
+            }
+
+            const domain = typeof config.domain === 'string' ? config.domain.trim() : '';
+            const address = domain.startsWith('//') ? 'https:' + domain : domain;
+            return Utils.getValidUrl(address) || '';
+        },
+        websiteLinkTooltip () {
+            if (!this.websiteUrl) {
+                return '';
+            }
+
+            return this.$t(this.websiteUrl.startsWith('file:')
+                ? 'sync.openLocalFileOrFolder'
+                : 'sync.clickToVisitYourWebsite');
+        },
+        syncInProgress () {
+            return this.$store.state.components.sidebar.syncInProgress;
+        }
+    },
+    watch: {
+        status () {
+            this.$nextTick(this.updateSyncLabelOverflow);
+        }
+    },
+    mounted () {
+        this._syncLabelObserver = new ResizeObserver(this.updateSyncLabelOverflow);
+        this._syncLabelObserver.observe(this.$refs.syncLabel);
+        this.updateSyncLabelOverflow();
+        window.addEventListener('focus', this.updateCurrentYear);
+
+        this.$bus.$on('app-menu-preview', this.renderPreview);
+        this.$bus.$on('app-menu-generate-preview', this.renderFiles);
+        this.$bus.$on('app-menu-sync', this.syncWebsite);
+    },
+    methods: {
+        updateCurrentYear () {
+            this.currentYear = new Date().getFullYear();
+        },
+        updateSyncLabelOverflow () {
+            const label = this.$refs.syncLabel;
+            this.isSyncLabelTruncated = !!label && label.clientWidth > 0 && label.scrollWidth > label.clientWidth;
+        },
+        renderPreview: function() {
+            if (!this.$store.state.currentSite.config.theme) {
+                let siteName = this.$store.state.currentSite.config.name;
+
+                this.$bus.$emit('confirm-display', {
+                    message: this.$t('sync.youHaventSelectedAnyThemeInfo'),
+                    okLabel: this.$t('sync.goToSettings'),
+                    okClick: () => {
+                        this.$router.push(`/site/${siteName}/settings/`);
+                    }
+                });
+                return;
+            }
+
+            this.$bus.$emit('rendering-popup-display');
+        },
+        showLocalPreviewPopup: function() {
+            this.$bus.$emit('local-preview-popup-show');
+        },
+        renderFiles: function() {
+            if (!this.$store.state.currentSite.config.theme) {
+                let siteName = this.$store.state.currentSite.config.name;
+
+                this.$bus.$emit('confirm-display', {
+                    message: this.$t('sync.youHaventSelectedAnyThemeInfo'),
+                    okLabel: this.$t('sync.goToSettings'),
+                    okClick: () => {
+                        this.$router.push(`/site/${siteName}/settings/`);
+                    }
+                });
+                return;
+            }
+
+            this.$bus.$emit('rendering-popup-display', {
+                showPreview: false
+            });
+        },
+        syncWebsite: async function(e) {
+            if (e && e.screenX === 0 && e.screenY === 0) {
+                return;
+            }
+
+            if (this.redirectTo === 'sync') {
+                if (!this.$store.state.currentSite.config.theme) {
+                    let siteName = this.$store.state.currentSite.config.name;
+
+                    this.$bus.$emit('confirm-display', {
+                        message: this.$t('sync.youHaventSelectedAnyThemeInfo'),
+                        okLabel: this.$t('sync.goToSettings'),
+                        okClick: () => {
+                            this.$router.push(`/site/${siteName}/settings/`);
+                        }
+                    })
+                    return;
+                }
+
+                if (await this.showSecretsNotice()) {
+                    return;
+                }
+
+                this.$bus.$emit('sync-popup-display');
+            } else if (this.redirectTo === 'site-settings') {
+                let siteName = this.$store.state.currentSite.config.name;
+
+                this.$router.push('/site/' + siteName + '/settings/server');
+            }
+        },
+        // Shown once per website when its saved credentials cannot be read from the system keychain
+        async showSecretsNotice () {
+            let siteName = this.$store.state.currentSite.config.name;
+            let result = await checkSiteSecrets(this.$store.state.currentSite.config);
+
+            if (!result.isFirstCheck || !result.missing.length) {
+                return false;
+            }
+
+            this.$bus.$emit('confirm-display', {
+                message: this.$t('sync.storedSecretsNotFoundNotice'),
+                okLabel: this.$t('settings.openServerSettings'),
+                okClick: () => {
+                    this.$router.push('/site/' + siteName + '/settings/server');
+                }
+            });
+
+            return true;
+        },
+        checkDeploymentConfig() {
+            let config = this.$store.state.currentSite.config;
+
+            if(!config || !config.deployment) {
+                return false;
+            }
+
+            if(config.deployment.protocol === '' || config.deployment.domain === '') {
+                return false;
+            }
+
+            return true;
+        }
+    },
+    beforeDestroy () {
+        if (this._syncLabelObserver) {
+            this._syncLabelObserver.disconnect();
+        }
+
+        window.removeEventListener('focus', this.updateCurrentYear);
+
+        this.$bus.$off('app-menu-preview', this.renderPreview);
+        this.$bus.$off('app-menu-generate-preview', this.renderFiles);
+        this.$bus.$off('app-menu-sync', this.syncWebsite);
+    }
+}
+</script>
+
+<style>
+
+.sidebar {
+}
+
+.sidebar-sync {
+    bottom: 3rem;
+    left: var(--app-sidebar-margin);
+    position: absolute;
+    right: var(--app-sidebar-margin);
+}
+
+.sidebar-sync-icon {
+    stroke: var(--white);
+}
+
+.sidebar-sync-date {
+    color: var(--sidebar-link-color);
+    display: block;
+    font-size: var(--font-size-ui-xs);
+    height: 16px; 
+    letter-spacing: -.025em;
+    margin-top: 1.2rem;
+    opacity: var(--sidebar-link-opacity);
+    overflow: hidden;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &[href]:hover {
+        color: var(--sidebar-link-color-hover);
+        opacity: 1;
+    }
+
+    &:focus {
+        color: var(--sidebar-link-color);
+    }
+}
+
+.sidebar-preview-actions {
+    background: transparent;
+    border: 2px solid var(--sidebar-preview-btn-border-color);
+    border-radius: var(--radius-base);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) calc(var(--button-height-sidebar) - 4px);
+    isolation: isolate;
+    margin-bottom: var(--space-4);
+    min-height: var(--button-height-sidebar);
+    transition: var(--transition-default);
+    transition-property: background-color, border-color;
+
+    &:has(.sidebar-preview-trigger:hover) {
+        background-color: var(--sidebar-link-bg-hover);
+        border-color: var(--sidebar-preview-btn-border-color-hover);
+    }
+
+    &:has(.sidebar-preview-trigger:active) {
+        background-color: var(--sidebar-link-bg-active);
+    }
+}
+
+.sidebar-preview-control {
+    align-items: center;
+    appearance: none;
+    background: transparent;
+    border: 0;
+    color: var(--sidebar-preview-btn-color);
+    cursor: pointer;
+    display: flex;
+    font-size: var(--font-size-ui-md);
+    font-weight: var(--font-weight-medium);
+    justify-content: center;
+    min-height: calc(var(--button-height-sidebar) - 4px);
+    min-width: 0;
+    position: relative;
+    transition: var(--transition-default);
+    transition-property: background-color, color;
+
+    &:hover {
+        color: var(--sidebar-preview-btn-color-hover);
+    }
+
+    &:focus-visible {
+        outline: 2px solid var(--sidebar-link-color);
+        outline-offset: 2px;
+        z-index: 1;
+    }
+}
+
+.sidebar-preview-trigger {
+    border-radius: calc(var(--radius-base) - 2px) 0 0 calc(var(--radius-base) - 2px);
+    overflow-wrap: anywhere;
+    padding: .6rem var(--button-padding-inline);
+    text-align: center;
+}
+
+.sidebar-preview-settings {
+    border-radius: 0 calc(var(--radius-base) - 2px) calc(var(--radius-base) - 2px) 0;
+    padding: 0;
+
+    &:hover {
+        background-color: var(--sidebar-link-bg-hover);
+    }
+
+    &:active {
+        background-color: var(--sidebar-link-bg-active);
+    }
+
+    &::before {
+        background: var(--sidebar-preview-btn-border-color);
+        bottom: var(--space-4);
+        content: "";
+        left: 0;
+        pointer-events: none;
+        position: absolute;
+        top: var(--space-4);
+        width: 1px;
+    }
+}
+
+.sidebar-preview-settings-icon {
+    display: inline-flex;
+    position: relative;
+}
+
+.sidebar-preview-running-indicator {
+    background: var(--color-success);
+    border-radius: 50%;
+    height: .6rem;
+    position: absolute;
+    right: calc(-1 * var(--space-2));
+    top: calc(-1 * var(--space-1));
+    width: .6rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-preview-actions,
+    .sidebar-preview-control {
+        transition: none;
+    }
+}
+
+.sidebar-sync-link {
+    align-items: center;
+    background: var(--sidebar-sync-btn-bg);
+    border-radius: var(--radius-base);
+    color: var(--sidebar-sync-btn-color);
+    display: flex;
+    gap: .6rem;
+    font-size: var(--font-size-ui-md);
+    font-weight: var(--font-weight-medium);
+    justify-content: center;
+    min-height: var(--button-height-sidebar);
+    transition-property: background-color, border-color, color, opacity;
+    padding: .6rem var(--button-padding-inline);
+    position: relative;
+
+    /* sync cloud icon */
+    .sidebar-sync-icon {
+        height: calc(var(--button-height-sidebar) / 2 - .2rem);
+        display: inherit;
+        width: calc((var(--button-height-sidebar) / 2 - .2rem) * 30 / 22);
+
+        path {
+            stroke: var(--white);
+            transition: var(--transition-default);
+        }
+
+        polygon {
+            stroke: var(--color-primary);
+            transition: var(--transition-default);
+        }
+    }
+
+    &:active .sidebar-sync-icon,
+    &:focus .sidebar-sync-icon,
+    &:hover .sidebar-sync-icon {
+        path {
+            stroke: var(--white);
+        }
+
+        polygon {
+            stroke: var(--color-warning);
+        }
+    }
+
+    /* .sidebar-sync-icon { */
+    /*     &.is-animated { */
+    /*         polygon { */
+    /*             animation: pulse 1s infinite; */
+    /*         } */
+    /*     } */
+    /* } */
+
+    /* interjection mark icon */
+    .sidebar-interjection-icon {
+        display: block;
+        height: calc(var(--button-height-sidebar) / 2 - .1rem);
+        width: calc((var(--button-height-sidebar) / 2 - .1rem) * 24 / 23);
+
+        path {
+            stroke: var(--white);
+        }
+    }
+
+    &:active,
+    &:focus,
+    &:hover {
+        background: var(--color-warning);
+        color: var(--white);
+
+        .sidebar-sync-icon {
+            stroke: var(--color-warning);
+        }
+    }
+}
+
+.sidebar-sync-link-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-sync-link-icon {
+    display: block;
+    flex-shrink: 0;
+    height: 100%;
+    width: auto;
+}
+
+.sidebar-sync-synced {}
+
+.sidebar-sync-not-synced {}
+
+.sidebar-sync-preparing,
+.sidebar-sync-prepared,
+.sidebar-sync-syncing {}
+
+.sidebar-sync-not-prepared,
+.sidebar-sync-noftp {}
+
+.sidebar-sync-preparing {
+    display: block;
+    height: 2.1rem;
+    width: 2.1rem;
+
+    & > span {
+        animation: spin .9s infinite linear;
+        border-top: 2px solid oklch(from var(--white) l c h / 20%);
+        border-right: 2px solid oklch(from var(--white) l c h / 20%);
+        border-bottom: 2px solid oklch(from var(--white) l c h / 20%);
+        border-left: 2px solid var(--white);
+        border-radius: 50%;
+        display: inline-block;
+        height: 2.1rem;
+        width: 2.1rem;
+
+        &::after {
+            border-radius: 50%;
+            content: "";
+            display: block;
+        }
+    }
+}
+
+.sidebar-sync-in-progress {
+    .sidebar-sync-link, .sidebar-sync-date, .sidebar-preview-website {
+       opacity: 0;
+       transition: .35s cubic-bezier(.17,.67,.13,1.05) .35s all;
+       visibility: hidden;
+    }
+}
+
+.sidebar-preview-link {
+    align-items: center;
+    border: 2px solid var(--sidebar-preview-btn-border-color);
+    border-radius: var(--radius-base);
+    color: var(--sidebar-preview-btn-color) !important;
+    display: flex;
+    font-size: var(--font-size-ui-md);
+    font-weight: var(--font-weight-medium);
+    justify-content: center;
+    margin-bottom: var(--space-4);
+    min-height: var(--button-height-sidebar);
+    transition-property: background-color, border-color, color, opacity;
+    padding: .6rem var(--button-padding-inline);
+    text-align: center;
+
+    & > span {
+        display: inline-block;
+        width: 3.2rem;
+    }
+
+    &:hover {
+        border-color: var(--sidebar-preview-btn-border-color-hover) !important;
+        color: var(--sidebar-preview-btn-color-hover) !important;
+    }
+
+    &.is-disabled {
+        opacity: .75;
+        pointer-events: none;
+    }
+}
+
+.minimized-sync {
+
+
+}
+
+.minimized-sync-in-progress {
+    .progress-message {
+        color: white;
+        position: initial;
+    }
+
+    .progress-wrapper {
+        min-height: 50px;
+        padding: 0;
+    }
+
+    .progress {
+        background-color: var(--sidebar-preview-btn-border-color);
+        height: 4px
+    }
+}
+
+.minimized-sync-in-progress .progress-bar {
+    height: 4px;
+}
+
+.minimized-sync-error {
+     font-size: var(--font-size-ui-sm);
+}
+
+@keyframes pulse {
+    from {
+        transform: translateY(50%);
+        opacity: 1;
+    }
+    to {
+        transform: translateY(-200%);
+        opacity: 0.5;
+    }
+}
+
+@keyframes spin {
+    100% {
+        transform: rotate(360deg);
+    }
+}
+.sidebar-sync-date:focus-visible {
+    outline: 2px solid var(--sidebar-link-color);
+    outline-offset: 2px;
+}
+</style>
