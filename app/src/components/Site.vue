@@ -7,23 +7,28 @@
         <transition>
             <router-view v-if="!isEmpty" />
         </transition>
+
+        <right-settings-panel v-if="!isEmpty" />
     </div>
 </template>
 
 <script>
 import SiteAddForm from './SiteAddForm';
 import Sidebar from './Sidebar';
+import RightSettingsPanel from './RightSettingsPanel';
 
 export default {
     name: 'site',
     components: {
         'add-website': SiteAddForm,
-        'sidebar': Sidebar
+        'sidebar': Sidebar,
+        'right-settings-panel': RightSettingsPanel
     },
     data: function() {
         return {
             currentSite: '',
-            siteIsLoaded: false
+            siteIsLoaded: false,
+            rightPanelOpen: false
         };
     },
     computed: {
@@ -48,7 +53,8 @@ export default {
         cssClasses: function() {
             return {
                 'site': true,
-                'is-empty': this.isEmpty
+                'is-empty': this.isEmpty,
+                'has-right-panel': this.rightPanelOpen && !this.isEmpty
             };
         }
     },
@@ -58,6 +64,7 @@ export default {
         });
 
         this.$bus.$on('site-loaded', this.whenSiteLoaded);
+        this.$bus.$on('right-panel-toggled', this.whenRightPanelToggled);
     },
     methods: {
         switchSite: function(siteName) {
@@ -129,6 +136,9 @@ export default {
         whenSiteLoaded () {
             this.currentSite = this.$store.state.currentSite.config.name;
         },
+        whenRightPanelToggled (isOpen) {
+            this.rightPanelOpen = isOpen;
+        },
         checkGdprConfig () {
             if (
                 this.$store.state.currentSite.config.advanced &&
@@ -158,6 +168,7 @@ export default {
     beforeDestroy () {
         this.$bus.$off('add-website-form-displayed');
         this.$bus.$off('site-loaded', this.whenSiteLoaded);
+        this.$bus.$off('right-panel-toggled', this.whenRightPanelToggled);
     }
 }
 </script>
@@ -195,11 +206,28 @@ export default {
         overflow: scroll;
         padding: var(--space-12) var(--space-16);
         right: 0;
-        width: calc(100% - var(--app-sidebar-width)); 
+        width: calc(100% - var(--app-sidebar-width));
+        transition: width .2s ease-out;
 
         &.is-wide {
             width: 100%;
         }
+    }
+
+    /* Reserve space for the right-side quick settings dock when it is open. */
+    &.has-right-panel {
+        .content {
+            right: 30rem;
+            width: calc(100% - var(--app-sidebar-width) - 30rem);
+
+            &.is-wide {
+                width: calc(100% - 30rem);
+            }
+        }
+    }
+
+    .wp-right-panel {
+        z-index: 6;
     }
 
     .v-enter-to,

@@ -8,6 +8,8 @@ const AstCurrentSiteConfig = {
         icon: ''
     },
     workspaceAccent: 'default',
+    // Lightweight category taxonomy added by the Publii-CN fork.
+    categories: [],
     domain: '',
     language: 'en-gb',
     spellchecking: false,

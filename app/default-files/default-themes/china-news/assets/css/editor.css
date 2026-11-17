@@ -1,0 +1,20 @@
+/*
+ * China News — 可视化编辑器样式
+ * 让后台编辑区的前台预览与主题中文排版保持一致
+ */
+.editor,
+.editor * {
+    font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Source Han Sans SC", "Noto Sans SC", sans-serif;
+}
+.editor {
+    line-height: 1.75;
+    letter-spacing: 0.01em;
+    color: #33363d;
+}
+.editor h1, .editor h2, .editor h3, .editor h4, .editor h5, .editor h6 {
+    color: #1d1d1f;
+    font-weight: 700;
+    line-height: 1.4;
+}
+.editor a { color: #e64328; }
+.editor blockquote { border-left: 4px solid #e64328; }

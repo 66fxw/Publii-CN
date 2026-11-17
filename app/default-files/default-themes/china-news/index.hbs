@@ -1,0 +1,166 @@
+{{> head}}
+{{> navbar}}
+<main>
+   <!-- 分类标签导航 -->
+   <nav class="cat-nav" aria-label="分类导航">
+      <div class="wrapper">
+         <span class="cat-nav__label">热门分类</span>
+         <a href="{{@website.tagsUrl}}">全部标签</a>
+         <a href="{{@website.tagsUrl}}">科技</a>
+         <a href="{{@website.tagsUrl}}">财经</a>
+         <a href="{{@website.tagsUrl}}">互联网</a>
+         <a href="{{@website.tagsUrl}}">数码</a>
+         <a href="{{@website.tagsUrl}}">创业</a>
+         <a href="{{@website.tagsUrl}}">深度</a>
+         <a href="{{@website.tagsUrl}}">观点</a>
+      </div>
+   </nav>
+
+   <!-- 首屏 -->
+   <div class="hero hero--noimage">
+      <header class="hero__content {{#checkIf @config.custom.alignHero '==' "center" }}hero__content--centered{{/checkIf}}">
+         <div class="wrapper">
+            {{{@config.custom.textHero}}}
+         </div>
+      </header>
+   </div>
+
+   <div class="wrapper">
+      <!-- 置顶 / 推荐头条 -->
+      {{#if @renderer.isFirstPage}}
+         {{#if @config.custom.feedFeaturedImage}}
+            <div class="section-label">
+               <h2>置顶推荐</h2>
+               <a class="more" href="{{@website.postsUrl}}">更多资讯 →</a>
+            </div>
+            <div class="headline-grid">
+               {{#each posts}}
+                  {{#checkIf @index '<' 3}}
+                     {{#featuredImage}}
+                        {{#if url}}
+                           {{#checkIf @../index '==' 0}}
+                              <a href="{{../url}}" class="headline-main">
+                                 <img src="{{url}}"
+                                    {{#if @config.site.responsiveImages}}
+                                       {{responsiveImageAttributes 'featuredImage' srcset.hero sizes.hero}}
+                                    {{/if}}
+                                    {{ lazyload "eager" }} alt="{{alt}}">
+                                 <div class="headline-main__body">
+                                    <span class="headline-main__tag">头条</span>
+                                    <h2>{{../title}}</h2>
+                                    <p>{{../excerpt}}</p>
+                                 </div>
+                              </a>
+                           {{else}}
+                              <a href="{{../url}}" class="headline-side-item">
+                                 <img src="{{url}}"
+                                    {{#if @config.site.responsiveImages}}
+                                       {{responsiveImageAttributes 'featuredImage' srcset.feed sizes.feed}}
+                                    {{/if}}
+                                    {{ lazyload "lazy" }} alt="{{alt}}">
+                                 <h3>{{../title}}</h3>
+                              </a>
+                           {{/checkIf}}
+                        {{/if}}
+                     {{/featuredImage}}
+                  {{/checkIf}}
+               {{/each}}
+            </div>
+         {{/if}}
+      {{/if}}
+
+      <!-- 最新资讯 + 侧边栏 -->
+      <div class="section-label">
+         <h2>最新资讯</h2>
+         <a class="more" href="{{@website.postsUrl}}">查看全部 →</a>
+      </div>
+      <div class="news-layout">
+         <div class="news-main feed">
+            {{#each posts}}
+               <article class="feed__item">
+                  {{#featuredImage}}
+                     {{#if url}}
+                        <figure class="feed__image">
+                           <img src="{{url}}"
+                              {{#if @config.site.responsiveImages}}
+                                 {{responsiveImageAttributes 'featuredImage' srcset.feed sizes.feed}}
+                              {{/if}}
+                              {{ lazyload "lazy" }} height="{{height}}" width="{{width}}" alt="{{alt}}">
+                        </figure>
+                     {{/if}}
+                  {{/featuredImage}}
+                  <div class="feed__content">
+                     <header>
+                        <div class="feed__meta">
+                           {{#author}}
+                              {{#if name}}<span class="feed__author">{{name}}</span>{{/if}}
+                           {{/author}}
+                           {{#if @config.custom.feedDate}}
+                              <time datetime="{{date createdAt 'YYYY-MM-DDTHH:mm'}}">
+                                 {{#checkIf @config.custom.formatDate '!=' 'custom'}}
+                                    {{date createdAt @config.custom.formatDate}}
+                                 {{else}}
+                                    {{date createdAt @config.custom.formatDateCustom}}
+                                 {{/checkIf}}
+                              </time>
+                           {{/if}}
+                           <span class="badge">资讯</span>
+                        </div>
+                        <h2 class="feed__title"><a href="{{url}}">{{title}}</a></h2>
+                     </header>
+                     {{#if hasCustomExcerpt}}
+                        {{{ excerpt }}}
+                     {{else}}
+                        <p>{{{ excerpt }}}</p>
+                     {{/if}}
+                     {{#if @config.custom.feedtReadMore}}
+                        <a href="{{url}}" class="readmore feed__readmore">{{ translate 'post.readMore' }}</a>
+                     {{/if}}
+                  </div>
+               </article>
+            {{/each}}
+            {{> pagination}}
+         </div>
+
+         <aside class="sidebar">
+            <div class="widget">
+               <h3 class="widget__title">热门文章</h3>
+               <ol class="rank-list">
+                  {{#each posts}}
+                     <li>
+                        <a href="{{url}}">{{title}}</a>
+                        <time datetime="{{date createdAt 'YYYY-MM-DD'}}">
+                           {{#checkIf @config.custom.formatDate '!=' 'custom'}}
+                              {{date createdAt @config.custom.formatDate}}
+                           {{else}}
+                              {{date createdAt @config.custom.formatDateCustom}}
+                           {{/checkIf}}
+                        </time>
+                     </li>
+                  {{/each}}
+               </ol>
+            </div>
+            <div class="widget">
+               <h3 class="widget__title">标签云</h3>
+               <div class="tag-cloud">
+                  <a href="{{@website.tagsUrl}}">科技</a>
+                  <a href="{{@website.tagsUrl}}">互联网</a>
+                  <a href="{{@website.tagsUrl}}">财经</a>
+                  <a href="{{@website.tagsUrl}}">数码</a>
+                  <a href="{{@website.tagsUrl}}">创业</a>
+                  <a href="{{@website.tagsUrl}}">人工智能</a>
+                  <a href="{{@website.tagsUrl}}">深度</a>
+                  <a href="{{@website.tagsUrl}}">观点</a>
+                  <a href="{{@website.tagsUrl}}">评测</a>
+                  <a href="{{@website.tagsUrl}}">教程</a>
+               </div>
+            </div>
+            <div class="widget widget--about">
+               <h3 class="widget__title">关于本站</h3>
+               <p>聚焦前沿资讯与科技动态，每日为你精选有价值的内容。欢迎订阅与分享。</p>
+            </div>
+         </aside>
+      </div>
+   </div>
+</main>
+{{> footer}}

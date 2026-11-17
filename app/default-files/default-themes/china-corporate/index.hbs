@@ -1,0 +1,187 @@
+{{> head}}
+{{> navbar}}
+<main>
+   <!-- 首屏 Hero -->
+   <div class="hero {{#checkIf @config.custom.uploadHero '&&' @renderer.isFirstPage}}{{else}}hero--noimage{{/checkIf}}">
+      {{#if @config.custom.textHero}}
+         <header class="hero__content {{#checkIf @config.custom.alignHero '==' "center" }}hero__content--centered{{/checkIf}}">
+            <div class="wrapper">
+               {{{@config.custom.textHero}}}
+            </div>
+         </header>
+      {{/if}}
+      {{#if @renderer.isFirstPage}}
+         {{#if @config.custom.uploadHero}}
+            <figure class="hero__image">
+               <div class="hero__image-wrapper">
+                  <img
+                     src="{{@config.custom.uploadHero}}"
+                     {{#if @config.site.responsiveImages}}
+                        {{responsiveImageAttributes @config.custom.uploadHero}}
+                     {{/if}}
+                     {{ lazyload "eager" }}
+                     {{imageDimensions @config.custom.uploadHero}}
+                     alt="{{@config.custom.uploadHeroAlt}}">
+               </div>
+               {{#if @config.custom.uploadHeroCaption}}
+                  <figcaption>{{@config.custom.uploadHeroCaption}}</figcaption>
+               {{/if}}
+            </figure>
+         {{/if}}
+      {{/if}}
+   </div>
+
+   <!-- 核心服务 / 产品 -->
+   <section class="section section--light">
+      <div class="wrapper">
+         <div class="section-head section-head--center">
+            <span class="eyebrow">核心业务 / Services</span>
+            <h2>我们为企业提供专业的数字化解决方案</h2>
+            <p>从战略咨询到落地实施，我们以专业能力助力企业稳健发展。</p>
+         </div>
+         <div class="services-grid">
+            <article class="service-card">
+               <span class="service-card__icon">策</span>
+               <h3>战略咨询</h3>
+               <p>结合行业趋势与企业实际，制定可执行的数字化转型战略与路线图。</p>
+            </article>
+            <article class="service-card">
+               <span class="service-card__icon">研</span>
+               <h3>产品研发</h3>
+               <p>以用户为中心，提供从需求分析、设计到交付的一站式产品研发服务。</p>
+            </article>
+            <article class="service-card">
+               <span class="service-card__icon">云</span>
+               <h3>云服务与运维</h3>
+               <p>稳定可靠的云架构与运维体系，保障业务系统安全、高效、持续运行。</p>
+            </article>
+            <article class="service-card">
+               <span class="service-card__icon">数</span>
+               <h3>数据分析</h3>
+               <p>沉淀企业数据资产，用可视化和智能分析驱动科学决策。</p>
+            </article>
+            <article class="service-card">
+               <span class="service-card__icon">品</span>
+               <h3>品牌设计</h3>
+               <p>塑造专业统一的品牌形象，提升企业在市场中的辨识度与信任感。</p>
+            </article>
+            <article class="service-card">
+               <span class="service-card__icon">护</span>
+               <h3>安全保障</h3>
+               <p>全方位的信息安全防护，守护企业数据资产与业务合规。</p>
+            </article>
+         </div>
+      </div>
+   </section>
+
+   <!-- 关于我们 -->
+   <section class="section">
+      <div class="wrapper about-grid">
+         <div class="about-visual" aria-hidden="true">客户至上</div>
+         <div class="about-text">
+            <span class="eyebrow">关于我们 / About</span>
+            <h2>值得信赖的长期合作伙伴</h2>
+            <p>我们是一支由行业资深专家组成的团队，专注于为企业提供高质量的技术与服务。多年深耕行业，我们积累了丰富的项目经验，服务覆盖多个领域。</p>
+            <p>我们坚持专业、务实、诚信的价值观，以客户成功为导向，用可靠的交付赢得客户信任。</p>
+            <ul class="check-list">
+               <li>行业领先的专业能力与实践经验</li>
+               <li>严谨规范的项目管理与交付流程</li>
+               <li>以客户为中心的快速响应机制</li>
+            </ul>
+            <a href="#" class="btn btn--primary">了解更多</a>
+         </div>
+      </div>
+   </section>
+
+   <!-- 数据与客户 -->
+   <section class="section section--dark">
+      <div class="wrapper">
+         <div class="section-head section-head--center">
+            <span class="eyebrow">实力见证 / Numbers</span>
+            <h2>用数据说话</h2>
+         </div>
+         <div class="stats-grid">
+            <div class="stat-item"><span class="stat-item__number">500+</span><span class="stat-item__label">服务企业客户</span></div>
+            <div class="stat-item"><span class="stat-item__number">12</span><span class="stat-item__label">年行业经验</span></div>
+            <div class="stat-item"><span class="stat-item__number">98%</span><span class="stat-item__label">客户满意度</span></div>
+            <div class="stat-item"><span class="stat-item__number">30+</span><span class="stat-item__label">覆盖行业领域</span></div>
+         </div>
+         <div class="clients-grid">
+            <span>合作伙伴</span><span>行业标杆</span><span>卓越品质</span><span>诚信服务</span>
+         </div>
+      </div>
+   </section>
+
+   <!-- 新闻动态 -->
+   <section class="section">
+      <div class="wrapper">
+         <div class="section-head">
+            <span class="eyebrow">新闻动态 / News</span>
+            <h2>最新资讯</h2>
+            <p>了解我们的最新动态、行业观点与洞察。</p>
+         </div>
+         <div class="feed">
+            {{#each posts}}
+               <article class="feed__item {{#checkIf @config.custom.alignFeed '==' "center" }}feed__item--centered{{/checkIf}}">
+                  {{#if @config.custom.feedFeaturedImage}}
+                     {{#featuredImage}}
+                        {{#if url}}
+                           <figure class="feed__image">
+                              <img
+                                 src="{{url}}"
+                                 {{#if @config.site.responsiveImages}}
+                                    {{responsiveImageAttributes 'featuredImage' srcset.feed sizes.feed}}
+                                 {{/if}}
+                                 {{ lazyload "lazy" }}
+                                 height="{{height}}"
+                                 width="{{width}}"
+                                 alt="{{alt}}">
+                           </figure>
+                        {{/if}}
+                     {{/featuredImage}}
+                  {{/if}}
+                  <div class="feed__content">
+                     <header>
+                        {{#checkIfAny @config.custom.feedAvatar @config.custom.feedAuthor @config.custom.feedDate}}
+                           <div class="feed__meta">
+                              {{#author}}
+                                 {{#if @config.custom.feedDate}}
+                                    <time datetime="{{date createdAt 'YYYY-MM-DDTHH:mm'}}" class="feed__date">
+                                       {{#checkIf @config.custom.formatDate '!=' 'custom'}}
+                                          {{date createdAt @config.custom.formatDate}}
+                                       {{else}}
+                                          {{date createdAt @config.custom.formatDateCustom}}
+                                       {{/checkIf}}
+                                    </time>
+                                 {{/if}}
+                              {{/author}}
+                           </div>
+                        {{/checkIfAny}}
+                        <h2 class="feed__title"><a href="{{url}}">{{title}}</a></h2>
+                     </header>
+                     {{#if hasCustomExcerpt}}
+                        {{{ excerpt }}}
+                     {{else}}
+                        <p>{{{ excerpt }}}</p>
+                     {{/if}}
+                     {{#if @config.custom.feedtReadMore}}
+                        <a href="{{url}}" class="readmore feed__readmore">{{ translate 'post.readMore' }}</a>
+                     {{/if}}
+                  </div>
+               </article>
+            {{/each}}
+         </div>
+         {{> pagination}}
+      </div>
+   </section>
+
+   <!-- 行动号召 -->
+   <section class="section section--dark cta-band">
+      <div class="wrapper">
+         <h2>携手合作，共创未来</h2>
+         <p>期待与您深入探讨，为您的企业创造更大价值。</p>
+         <a href="#" class="btn btn--light">联系我们</a>
+      </div>
+   </section>
+</main>
+{{> footer}}

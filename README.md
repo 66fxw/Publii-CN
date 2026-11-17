@@ -1,3 +1,22 @@
+# Publii-CN — 面向中文用户的二次开发分支
+
+> 本项目是 [GetPublii/Publii](https://github.com/GetPublii/Publii) 的中文本地化二次开发分支（Fork），
+> 在保留 Publii 全部静态站点生成能力的基础上，针对国内用户的使用习惯做了增强。
+> 上游代码仍遵循 GPLv3 协议，本项目同样以 GPLv3 开源。
+
+## 二次开发内容（Publii-CN 新增）
+
+1. **简体中文界面语言包** — 新增 `zh-cn` 完整界面翻译（1594+ 键），可在应用设置中切换为中文。
+2. **WordPress 风格后台外观** — 新增 `wordpress` 应用外观，借鉴经典 WordPress 后台的深色侧边栏、工具栏与蓝色主色；在「应用设置 → 界面风格」中切换。
+3. **右侧快捷设置面板** — 站点视图右侧新增可折叠面板，包含 **分类 / 页面 / 标签 / 菜单** 四个分区：
+   - 分类：新增的轻量级内容分类法（存储于站点配置，无需数据库迁移），支持增删改；
+   - 页面 / 标签 / 菜单：聚合现有数据，提供快速入口与统计。
+4. **两款中文主题** — 新增 `china-corporate`（企业官网，稳重商务蓝）与 `china-news`（资讯博客，明快杂志风），均采用中文优先字体栈与中文本地化文案。
+
+详细的开发说明见 [`CN-DEVELOPMENT.md`](./CN-DEVELOPMENT.md)。
+
+---
+
 # Publii - Static CMS for privacy-focused, SEO-optimized websites.
 
 [![GPLv3 license](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/GetPublii/Publii/blob/master/LICENSE)

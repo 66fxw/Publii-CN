@@ -30,6 +30,17 @@
                 </field>
 
                 <field
+                    id="app-appearance"
+                    :label="$t('settings.appAppearance')">
+                    <dropdown
+                        slot="field"
+                        id="app-appearance"
+                        v-model="appAppearance"
+                        :items="availableAppearances"></dropdown>
+                    <small slot="note">{{ $t('settings.appAppearanceNote') }}</small>
+                </field>
+
+                <field
                     id="start"
                     :label="$t('settings.loadAtStart')">
                     <dropdown
@@ -506,6 +517,7 @@ export default {
             authorsOrdering: 'id DESC',
             originalSitesLocation: '',
             theme: 'default',
+            appAppearance: 'publii',
             enableAdvancedPreview: false,
             previewServerEnabled: true,
             locations: {
@@ -541,6 +553,12 @@ export default {
                 'system': this.$t('settings.systemColors'),
                 'default': this.$t('settings.lightMode'),
                 'dark': this.$t('settings.darkMode')
+            };
+        },
+        availableAppearances () {
+            return {
+                'publii': this.$t('settings.appAppearancePublii'),
+                'wordpress': this.$t('settings.appAppearanceWordpress')
             };
         },
         timeFormats () {
@@ -672,6 +690,7 @@ export default {
         this.uiZoomLevel = this.$store.state.app.config.uiZoomLevel;
         this.autoAdjustSidebarWidth = this.$store.state.app.config.autoAdjustSidebarWidth !== false;
         this.theme = this.getAppTheme();
+        this.appAppearance = this.$store.state.app.config.appAppearance || 'publii';
 
         Vue.nextTick(() => {
             this.unwatchBackupsLocation = this.$watch('locations.backups', this.detectBackupLocationChange);
@@ -709,6 +728,7 @@ export default {
                 resizeEngine: this.imageResizeEnginesSelected,
                 uiZoomLevel: this.uiZoomLevel,
                 autoAdjustSidebarWidth: this.autoAdjustSidebarWidth,
+                appAppearance: this.appAppearance,
                 sitesLocation: this.locations.sites.trim(),
                 backupsLocation: this.locations.backups.trim(),
                 previewsLocation: this.locations.previews.trim(),

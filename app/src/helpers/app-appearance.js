@@ -1,21 +1,28 @@
 const DEFAULT_APP_APPEARANCE = 'publii';
 const DEFAULT_WORKSPACE_ACCENT = 'default';
+
+const SHARED_WORKSPACE_ACCENTS = Object.freeze([
+    DEFAULT_WORKSPACE_ACCENT,
+    'indigo',
+    'violet',
+    'magenta',
+    'crimson',
+    'rose',
+    'orange',
+    'emerald',
+    'petrol',
+    'navy',
+    'graphite',
+    'midnight'
+]);
+
 const APP_APPEARANCES = Object.freeze({
     publii: Object.freeze({
-        workspaceAccents: Object.freeze([
-            DEFAULT_WORKSPACE_ACCENT,
-            'indigo',
-            'violet',
-            'magenta',
-            'crimson',
-            'rose',
-            'orange',
-            'emerald',
-            'petrol',
-            'navy',
-            'graphite',
-            'midnight'
-        ])
+        workspaceAccents: SHARED_WORKSPACE_ACCENTS
+    }),
+    // WordPress-admin inspired appearance added by the Publii-CN fork.
+    wordpress: Object.freeze({
+        workspaceAccents: SHARED_WORKSPACE_ACCENTS
     })
 });
 

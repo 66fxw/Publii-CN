@@ -1,0 +1,2819 @@
+{
+    "name": "China Corporate",
+    "version": "1.0.0.0",
+    "author": "Publii-CN",
+    "menus": {
+        "mainMenu": {
+            "desc": "网站顶部主导航",
+            "name": "主菜单",
+            "maxLevels": -1
+        },
+        "footerMenu": {
+            "desc": "网站底部导航",
+            "name": "页脚菜单",
+            "maxLevels": 1
+        }
+    },
+    "renderer": {
+        "relatedPostsNumber": 3,
+        "renderRelatedPosts": true,
+        "renderSimilarPosts": false,
+        "renderPrevNextPosts": true,
+        "createContentStructure": true,
+        "createTagPages": true,
+        "createAuthorPages": true,
+        "createTagsList": true,
+        "createSearchPage": false,
+        "create404page": true,
+        "customHTML": {
+            "afterPost": "每篇文章之后",
+            "afterPage": "每个页面之后"
+        }
+    },
+    "supportedFeatures": {
+        "blockEditor": true,
+        "tagsList": true,
+        "tagPages": true,
+        "tagImages": true,
+        "authorPages": true,
+        "authorImages": true,
+        "searchPage": true,
+        "errorPage": true,
+        "customSharing": true,
+        "customSearch": true,
+        "customComments": true,
+        "embedConsents": true,
+        "pages": true,
+        "postsPage": true
+    },
+    "pageTemplates": {
+        "empty": "空白容器"
+    },
+    "config": [
+        {
+            "name": "postsPerPage",
+            "label": "每页文章数",
+            "value": 5,
+            "type": "number"
+        },
+        {
+            "name": "tagsPostsPerPage",
+            "label": "标签页每页文章数",
+            "value": 5,
+            "type": "number"
+        },
+        {
+            "name": "authorsPostsPerPage",
+            "label": "作者页每页文章数",
+            "value": 5,
+            "type": "number"
+        },
+        {
+            "name": "excerptLength",
+            "label": "摘要字数",
+            "value": 45,
+            "type": "number"
+        },
+        {
+            "name": "logo",
+            "label": "网站 Logo",
+            "value": "",
+            "type": "upload",
+            "upload": true
+        }
+    ],
+    "customConfig": [
+        {
+            "name": "pageMargin",
+            "label": "页面边距",
+            "group": "布局",
+            "value": "6vw",
+            "type": "text"
+        },
+        {
+            "name": "pageWidth",
+            "label": "页面宽度",
+            "group": "布局",
+            "note": "Defines the overall width of the page. This should always be greater than or equal to the Entry width to ensure proper layout. Set to 100% for full-screen width.",
+            "value": "66rem",
+            "type": "text"
+        },
+        {
+            "name": "entryWidth",
+            "label": "正文宽度",
+            "group": "布局",
+            "note": "Defines the width of content for posts and pages. Ensure that this value is smaller than or equal to the Page width for proper content display. Set to 100% for full-screen width.",
+            "value": "42rem",
+            "type": "text"
+        },
+        {
+            "name": "borderRadius",
+            "label": "圆角大小",
+            "group": "布局",
+            "note": "Adjust the roundness of corners for elements like images, buttons or dropdown menus. Increasing this value (in pixels) will make the corners more rounded.",
+            "value": "3",
+            "type": "range",
+            "min": 0,
+            "max": 100,
+            "step": 1
+        },
+        {
+            "name": "baseline",
+            "label": "基准间距",
+            "group": "布局",
+            "note": "Defines a core vertical rhythm unit for consistent spacing across the website, used as a multiplier for margins and paddings. Increasing this value enhances spacing, creating an airier layout, while decreasing it compacts content, for tighter visual appeal.",
+            "value": "0.28333rem",
+            "type": "text"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "首屏区域",
+            "group": "布局",
+            "size": "big"
+        },
+        {
+            "name": "alignHero",
+            "label": "内容对齐",
+            "group": "布局",
+            "value": "left",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "左对齐",
+                    "value": "left"
+                },
+                {
+                    "label": "居中",
+                    "value": "center"
+                }
+            ]
+        },
+        {
+            "name": "textHero",
+            "label": "首屏内容",
+            "group": "布局",
+            "value": "<h1>专注企业数字化，成就客户未来</h1><p>我们以专业、稳健、可信赖的服务，助力中国企业迈向更广阔的发展空间。</p><p><a href=\"#\" class=\"btn btn--primary\">了解我们的服务</a></p>",
+            "type": "wysiwyg"
+        },
+        {
+            "name": "heightHero",
+            "label": "图片高度",
+            "group": "布局",
+            "value": "50vh",
+            "type": "text"
+        },
+        {
+            "name": "uploadHero",
+            "label": "图片",
+            "group": "布局",
+            "value": "",
+            "type": "upload",
+            "upload": true
+        },
+        {
+            "name": "uploadHeroAlt",
+            "label": "图片替代文字",
+            "group": "布局",
+            "placeholder": "请输入首屏图片的替代文字",
+            "value": "",
+            "type": "text"
+        },
+        {
+            "name": "uploadHeroCaption",
+            "label": "图片说明",
+            "group": "布局",
+            "placeholder": "请输入首屏图片说明文字",
+            "value": "",
+            "type": "text"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "文章页",
+            "group": "布局",
+            "size": "big"
+        },
+        {
+            "name": "relatedPostsNumber",
+            "label": "相关文章数量",
+            "group": "布局",
+            "note": "Specify number of related posts to show. Zero '0' means no posts.",
+            "value": "3",
+            "type": "number"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "文章列表",
+            "note": "This section lets you choose what shows up in your feed on the homepage, tags, and author pages. You can pick and choose which details to show, like author avatars, post dates, and other things.",
+            "size": "no-line"
+        },
+        {
+            "name": "alignFeed",
+            "label": "内容对齐",
+            "group": "文章列表",
+            "value": "center",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "左对齐",
+                    "value": "left"
+                },
+                {
+                    "label": "居中",
+                    "value": "center"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "文章列表",
+            "size": "small thin "
+        },
+        {
+            "name": "feedFeaturedImage",
+            "group": "文章列表",
+            "label": "显示特色图片",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "feedFeaturedImageSize",
+            "label": "Image size",
+            "group": "文章列表",
+            "note": "Adjust the size of the featured image in REM value.",
+            "value": "8",
+            "type": "range",
+            "min": 1,
+            "max": 50,
+            "step": 1,
+            "dependencies": [
+                {
+                    "field": "feedFeaturedImage",
+                    "value": true
+                }
+            ]
+        },
+        {
+            "name": "feedAvatar",
+            "group": "文章列表",
+            "label": "显示作者头像",
+            "value": true,
+            "type": "checkbox"
+        },
+        {
+            "name": "feedAuthor",
+            "group": "文章列表",
+            "label": "显示作者名称",
+            "value": true,
+            "type": "checkbox"
+        },
+        {
+            "name": "feedDate",
+            "group": "文章列表",
+            "label": "显示日期",
+            "value": true,
+            "type": "checkbox"
+        },
+        {
+            "name": "feedDateType",
+            "group": "文章列表",
+            "label": "",
+            "value": "published",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "发布日期",
+                    "value": "published"
+                },
+                {
+                    "label": "修改日期",
+                    "value": "modified"
+                }
+            ],
+            "dependencies": [
+                {
+                    "field": "feedDate",
+                    "value": true
+                }
+            ]
+        },
+        {
+            "name": "feedtReadMore",
+            "group": "文章列表",
+            "label": "显示“阅读更多”按钮",
+            "value": true,
+            "type": "checkbox"
+        },
+        {
+            "name": "navbarHeight",
+            "group": "导航栏",
+            "label": "导航栏高度",
+            "value": "6rem",
+            "type": "text"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "下拉菜单",
+            "group": "导航栏",
+            "size": "big"
+        },
+        {
+            "name": "submenu",
+            "label": "宽度",
+            "group": "导航栏",
+            "value": "auto",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "自动",
+                    "value": "auto"
+                },
+                {
+                    "label": "自定义",
+                    "value": "custom"
+                }
+            ]
+        },
+        {
+            "name": "submenuWidth",
+            "group": "导航栏",
+            "note": "The submenu width in PX unit",
+            "label": "",
+            "value": "240",
+            "type": "range",
+            "min": 0,
+            "max": 1000,
+            "step": 10,
+            "dependencies": [
+                {
+                    "field": "submenu",
+                    "value": "custom"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "移动端菜单",
+            "group": "导航栏",
+            "size": "big"
+        },
+        {
+            "name": "mobilemenu",
+            "label": "类型",
+            "group": "导航栏",
+            "value": "sidebar",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "侧边栏",
+                    "value": "sidebar"
+                },
+                {
+                    "label": "遮罩层",
+                    "value": "overlay"
+                }
+            ]
+        },
+        {
+            "name": "mobilemenuExpandableSubmenus",
+            "label": "可展开子菜单",
+            "group": "导航栏",
+            "value": true,
+            "type": "checkbox"
+        },
+        {
+            "name": "colorScheme",
+            "label": "选择配色方案",
+            "group": "颜色",
+            "note": "<br>The auto color scheme feature automatically adjusts the color scheme of the interface to match the user's operating system settings. If the operating system does not support this feature, the light version of the color scheme is used instead",
+            "value": "auto",
+            "type": "radio",
+            "options": [
+                {
+                    "label": "浅色",
+                    "value": "light"
+                },
+                {
+                    "label": "深色",
+                    "value": "dark"
+                },
+                {
+                    "label": "自动",
+                    "value": "auto"
+                }
+            ]
+        },
+        {
+            "name": "primaryColor",
+            "label": "主色调（浅色模式）",
+            "group": "颜色",
+            "value": "#1B5AA9",
+            "type": "colorpicker"
+        },
+        {
+            "name": "primaryDarkColor",
+            "label": "主色调（深色模式）",
+            "group": "颜色",
+            "value": "#5B9BE8",
+            "type": "colorpicker"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "主字体设置",
+            "group": "字体",
+            "note": "To explore an extensive list of available fonts, along with detailed information about their typefaces, complete range of weights, and other specifications, please visit our <a href='https://getpublii.com/docs/fonts.html' target='_blank'>documentation</a>.",
+            "size": "small"
+        },
+        {
+            "name": "fontBody",
+            "label": "正文字体",
+            "group": "字体",
+            "value": "system-ui",
+            "type": "select",
+            "options": [
+                {
+                    "label": "OS Default Font",
+                    "value": "system-ui",
+                    "group": "系统"
+                },
+                {
+                    "label": "Aleo",
+                    "value": "aleo",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Andada Pro",
+                    "value": "andadapro",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Besley",
+                    "value": "besley",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Bitter",
+                    "value": "bitter",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Bodoni Moda",
+                    "value": "bodonimoda",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Brygada 1918",
+                    "value": "brygada1918",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Cinzel",
+                    "value": "cinzel",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Danfo",
+                    "value": "danfo",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Domine",
+                    "value": "domine",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Faustina",
+                    "value": "faustina",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Frank Ruhl Libre",
+                    "value": "frankruhllibre",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Grenze Gotisch",
+                    "value": "grenzegotisch",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Imbue",
+                    "value": "imbue",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Kalnia",
+                    "value": "kalnia",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Kreon",
+                    "value": "kreon",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Labrada",
+                    "value": "labrada",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Lora",
+                    "value": "lora",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Manuale",
+                    "value": "manuale",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Petrona",
+                    "value": "petrona",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Playfair Display",
+                    "value": "playfairdisplay",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Red Rose",
+                    "value": "redrose",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Roboto Slab",
+                    "value": "robotoslab",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Rokkitt",
+                    "value": "rokkitt",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Yrsa",
+                    "value": "yrsa",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Advent Pro",
+                    "value": "adventpro",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Albert Sans",
+                    "value": "albertsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Antonio",
+                    "value": "antonio",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Archivo Narrow",
+                    "value": "archivonarrow",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Asap",
+                    "value": "asap",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Assistant",
+                    "value": "assistant",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Cabin",
+                    "value": "cabin",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Cairo",
+                    "value": "cairo",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Comme",
+                    "value": "comme",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "DM Sans",
+                    "value": "dmsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Dosis",
+                    "value": "dosis",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Doto",
+                    "value": "doto",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Dyna Puff",
+                    "value": "dynapuff",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Exo",
+                    "value": "exo",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Familjen Grotesk",
+                    "value": "familjengrotesk",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Figtree",
+                    "value": "figtree",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Finlandica",
+                    "value": "finlandica",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Fredoka",
+                    "value": "fredoka",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Funnel Display",
+                    "value": "funneldisplay",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Gantari",
+                    "value": "gantari",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Glory",
+                    "value": "glory",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Handjet",
+                    "value": "handjet",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Heebo",
+                    "value": "heebo",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Host Grotesk",
+                    "value": "hostgrotesk",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Inclusive Sans",
+                    "value": "inclusivesans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Instrument Sans",
+                    "value": "instrumentsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Inter",
+                    "value": "inter",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Jura",
+                    "value": "jura",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Karla",
+                    "value": "karla",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Kumbh Sans",
+                    "value": "kumbhsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "League Spartan",
+                    "value": "leaguespartan",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Lexend",
+                    "value": "lexend",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Lexend Deca",
+                    "value": "lexenddeca",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Libre Franklin",
+                    "value": "librefranklin",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Manrope",
+                    "value": "manrope",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Maven Pro",
+                    "value": "mavenpro",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Merriweather Sans",
+                    "value": "merriweathersans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Montserrat",
+                    "value": "montserrat",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Mulish",
+                    "value": "mulish",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Nunito",
+                    "value": "nunito",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Orbitron",
+                    "value": "orbitron",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Oswald",
+                    "value": "oswald",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Outfit",
+                    "value": "outfit",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Oxanium",
+                    "value": "oxanium",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Parkinsans",
+                    "value": "parkinsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Plus Jakarta Sans",
+                    "value": "plusjakartasans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Pontano Sans",
+                    "value": "pontanosans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Public Sans",
+                    "value": "publicsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Quicksand",
+                    "value": "quicksand",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Radio Canada Big",
+                    "value": "radiocanadabig",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Raleway",
+                    "value": "raleway",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Red Hat Display",
+                    "value": "redhatdisplay",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Red Hat Text",
+                    "value": "redhattext",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "REM",
+                    "value": "rem",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Roboto Flex",
+                    "value": "robotoflex",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Rubik",
+                    "value": "rubik",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Ruda",
+                    "value": "ruda",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Smooch Sans",
+                    "value": "smoochsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Sora",
+                    "value": "sora",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Spartan",
+                    "value": "spartan",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Stick No Bills",
+                    "value": "sticknobills",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Teachers",
+                    "value": "teachers",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Tektur",
+                    "value": "tektur",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Tourney",
+                    "value": "tourney",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Urbanist",
+                    "value": "urbanist",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Varta",
+                    "value": "varta",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Wix Madefor Text",
+                    "value": "wixmadefortext",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Workbench",
+                    "value": "workbench",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Work Sans",
+                    "value": "worksans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Yanone Kaffeesatz",
+                    "value": "yanonekaffeesatz",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Zalando Sans",
+                    "value": "zalandosans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Zalando Sans Expanded",
+                    "value": "zalandosansexpanded",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Comfortaa",
+                    "value": "comfortaa",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Dancing Script",
+                    "value": "dancingscript",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Gluten",
+                    "value": "gluten",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Lemonada",
+                    "value": "lemonada",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Playwrite US Modern",
+                    "value": "playwriteusmodern",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Playwrite US Traditional",
+                    "value": "playwriteustrad",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Bitcount",
+                    "value": "bitcount",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Geist Mono",
+                    "value": "geistmono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Google Sans Code",
+                    "value": "googlesanscode",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "JetBrains Mono",
+                    "value": "jetbrainsmono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Red Hat Mono",
+                    "value": "redhatmono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Source Code Pro",
+                    "value": "sourcecodepro",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "SUSE Mono",
+                    "value": "susemono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Victor Mono",
+                    "value": "victormono",
+                    "group": "等宽字体"
+                }
+            ]
+        },
+        {
+            "name": "disableFontBodyItalic",
+            "label": "禁用斜体样式",
+            "group": "字体",
+            "note": "This option allows you to disable the loading of the dedicated italic version for the body font. The italic font is automatically loaded when selecting a body font that supports it, like Lora, for optimal appearance. However, for performance reasons, you can choose to prevent loading the dedicated italic version by enabling this option.",
+            "type": "checkbox",
+            "value": false,
+            "dependencies": [
+                {
+                    "field": "fontBody",
+                    "value": "albertsans,adventpro,aleo,andadapro,archivonarrow,asap,besley,bitter,bodonimoda,brygada1918,cabin,dmsans,exo,familjengrotesk,faustina,figtree,finlandica,gantari,glory,googlesanscode,hostgrotesk,inclusivesans,instrumentsans,inter,jetbrainsmono,karla,labrada,librefranklin,lora,manuale,merriweathersans,montserrat,mulish,nunito,petrona,playfairdisplay,plusjakartasans,publicsans,radiocanadabig,raleway,redhatdisplay,redhatmono,redhattext,rem,rokkitt,rubik,sourcecodepro,susemono,teachers,tourney,urbanist,victormono,wixmadefortext,worksans,zalandosans,zalandosansexpanded,yrsa"
+                }
+            ]
+        },
+        {
+            "name": "fontHeadings",
+            "label": "标题字体",
+            "group": "字体",
+            "value": "system-ui",
+            "type": "select",
+            "options": [
+                {
+                    "label": "OS Default Font",
+                    "value": "system-ui",
+                    "group": "系统"
+                },
+                {
+                    "label": "Aleo",
+                    "value": "aleo",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Andada Pro",
+                    "value": "andadapro",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Besley",
+                    "value": "besley",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Bitter",
+                    "value": "bitter",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Bodoni Moda",
+                    "value": "bodonimoda",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Brygada 1918",
+                    "value": "brygada1918",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Cinzel",
+                    "value": "cinzel",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Danfo",
+                    "value": "danfo",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Domine",
+                    "value": "domine",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Faustina",
+                    "value": "faustina",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Frank Ruhl Libre",
+                    "value": "frankruhllibre",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Grenze Gotisch",
+                    "value": "grenzegotisch",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Imbue",
+                    "value": "imbue",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Kalnia",
+                    "value": "kalnia",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Kreon",
+                    "value": "kreon",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Labrada",
+                    "value": "labrada",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Lora",
+                    "value": "lora",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Manuale",
+                    "value": "manuale",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Petrona",
+                    "value": "petrona",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Playfair Display",
+                    "value": "playfairdisplay",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Red Rose",
+                    "value": "redrose",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Roboto Slab",
+                    "value": "robotoslab",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Rokkitt",
+                    "value": "rokkitt",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Yrsa",
+                    "value": "yrsa",
+                    "group": "衬线体"
+                },
+                {
+                    "label": "Advent Pro",
+                    "value": "adventpro",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Albert Sans",
+                    "value": "albertsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Antonio",
+                    "value": "antonio",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Archivo Narrow",
+                    "value": "archivonarrow",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Asap",
+                    "value": "asap",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Assistant",
+                    "value": "assistant",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Cabin",
+                    "value": "cabin",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Cairo",
+                    "value": "cairo",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Comme",
+                    "value": "comme",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "DM Sans",
+                    "value": "dmsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Dosis",
+                    "value": "dosis",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Doto",
+                    "value": "doto",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Dyna Puff",
+                    "value": "dynapuff",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Exo",
+                    "value": "exo",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Familjen Grotesk",
+                    "value": "familjengrotesk",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Figtree",
+                    "value": "figtree",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Finlandica",
+                    "value": "finlandica",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Fredoka",
+                    "value": "fredoka",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Funnel Display",
+                    "value": "funneldisplay",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Gantari",
+                    "value": "gantari",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Glory",
+                    "value": "glory",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Handjet",
+                    "value": "handjet",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Heebo",
+                    "value": "heebo",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Host Grotesk",
+                    "value": "hostgrotesk",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Inclusive Sans",
+                    "value": "inclusivesans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Instrument Sans",
+                    "value": "instrumentsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Inter",
+                    "value": "inter",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Jura",
+                    "value": "jura",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Karla",
+                    "value": "karla",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Kumbh Sans",
+                    "value": "kumbhsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "League Spartan",
+                    "value": "leaguespartan",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Lexend",
+                    "value": "lexend",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Lexend Deca",
+                    "value": "lexenddeca",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Libre Franklin",
+                    "value": "librefranklin",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Manrope",
+                    "value": "manrope",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Maven Pro",
+                    "value": "mavenpro",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Merriweather Sans",
+                    "value": "merriweathersans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Montserrat",
+                    "value": "montserrat",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Mulish",
+                    "value": "mulish",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Nunito",
+                    "value": "nunito",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Orbitron",
+                    "value": "orbitron",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Oswald",
+                    "value": "oswald",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Outfit",
+                    "value": "outfit",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Oxanium",
+                    "value": "oxanium",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Parkinsans",
+                    "value": "parkinsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Plus Jakarta Sans",
+                    "value": "plusjakartasans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Pontano Sans",
+                    "value": "pontanosans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Public Sans",
+                    "value": "publicsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Quicksand",
+                    "value": "quicksand",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Radio Canada Big",
+                    "value": "radiocanadabig",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Raleway",
+                    "value": "raleway",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Red Hat Display",
+                    "value": "redhatdisplay",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Red Hat Text",
+                    "value": "redhattext",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "REM",
+                    "value": "rem",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Roboto Flex",
+                    "value": "robotoflex",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Rubik",
+                    "value": "rubik",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Ruda",
+                    "value": "ruda",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Smooch Sans",
+                    "value": "smoochsans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Sora",
+                    "value": "sora",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Spartan",
+                    "value": "spartan",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Stick No Bills",
+                    "value": "sticknobills",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Teachers",
+                    "value": "teachers",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Tektur",
+                    "value": "tektur",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Tourney",
+                    "value": "tourney",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Urbanist",
+                    "value": "urbanist",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Varta",
+                    "value": "varta",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Wix Madefor Text",
+                    "value": "wixmadefortext",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Workbench",
+                    "value": "workbench",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Work Sans",
+                    "value": "worksans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Yanone Kaffeesatz",
+                    "value": "yanonekaffeesatz",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Zalando Sans",
+                    "value": "zalandosans",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Zalando Sans Expanded",
+                    "value": "zalandosansexpanded",
+                    "group": "无衬线体"
+                },
+                {
+                    "label": "Comfortaa",
+                    "value": "comfortaa",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Dancing Script",
+                    "value": "dancingscript",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Gluten",
+                    "value": "gluten",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Lemonada",
+                    "value": "lemonada",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Playwrite US Modern",
+                    "value": "playwriteusmodern",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Playwrite US Traditional",
+                    "value": "playwriteustrad",
+                    "group": "手写体"
+                },
+                {
+                    "label": "Bitcount",
+                    "value": "bitcount",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Geist Mono",
+                    "value": "geistmono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Google Sans Code",
+                    "value": "googlesanscode",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "JetBrains Mono",
+                    "value": "jetbrainsmono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Red Hat Mono",
+                    "value": "redhatmono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Source Code Pro",
+                    "value": "sourcecodepro",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "SUSE Mono",
+                    "value": "susemono",
+                    "group": "等宽字体"
+                },
+                {
+                    "label": "Victor Mono",
+                    "value": "victormono",
+                    "group": "等宽字体"
+                }
+            ]
+        },
+        {
+            "name": "disableFontHeadingsItalic",
+            "label": "禁用斜体样式",
+            "group": "字体",
+            "note": "This option allows you to disable loading of the dedicated italic version for the headings font. The italic font is automatically loaded when selecting a headings font that supports it, like Lora, for optimal appearance. However, for performance reasons, you can choose to prevent loading of the dedicated italic version by enabling this option.",
+            "type": "checkbox",
+            "value": false,
+            "dependencies": [
+                {
+                    "field": "fontHeadings",
+                    "value": "albertsans,adventpro,aleo,andadapro,archivonarrow,asap,besley,bitter,bodonimoda,brygada1918,cabin,dmsans,exo,familjengrotesk,faustina,figtree,finlandica,gantari,glory,googlesanscode,hostgrotesk,inclusivesans,instrumentsans,inter,jetbrainsmono,karla,labrada,librefranklin,lora,manuale,merriweathersans,montserrat,mulish,nunito,petrona,playfairdisplay,plusjakartasans,publicsans,radiocanadabig,raleway,redhatdisplay,redhatmono,redhattext,rem,rokkitt,rubik,sourcecodepro,susemono,teachers,tourney,urbanist,victormono,wixmadefortext,worksans,zalandosans,zalandosansexpanded,yrsa"
+                }
+            ]
+        },
+        {
+            "name": "fontMenu",
+            "label": "菜单字体",
+            "group": "字体",
+            "value": "var(--body-font)",
+            "type": "select",
+            "options": [
+                {
+                    "label": "OS Default Font",
+                    "value": "system-ui"
+                },
+                {
+                    "label": "使用正文字体",
+                    "value": "var(--body-font)"
+                },
+                {
+                    "label": "使用标题字体",
+                    "value": "var(--heading-font)"
+                }
+            ]
+        },
+        {
+            "name": "fontLogo",
+            "label": "Logo 字体",
+            "group": "字体",
+            "value": "var(--body-font)",
+            "type": "select",
+            "options": [
+                {
+                    "label": "OS Default Font",
+                    "value": "system-ui"
+                },
+                {
+                    "label": "使用正文字体",
+                    "value": "var(--body-font)"
+                },
+                {
+                    "label": "使用标题字体",
+                    "value": "var(--heading-font)"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "字体",
+            "size": "big thin"
+        },
+        {
+            "name": "minFontSize",
+            "label": "最小字号",
+            "group": "字体",
+            "note": "The font-size of the root element in REM unit",
+            "value": "1.05",
+            "type": "range",
+            "min": 1,
+            "max": 3,
+            "step": 0.05
+        },
+        {
+            "name": "maxFontSize",
+            "label": "最大字号",
+            "group": "字体",
+            "note": "The font-size of the root element in REM unit",
+            "value": "1.15",
+            "type": "range",
+            "min": 1,
+            "max": 3,
+            "step": 0.05
+        },
+        {
+            "name": "lineHeight",
+            "label": "行高",
+            "group": "字体",
+            "note": "The default line-height for text within body elements, excluding headings.",
+            "value": "1.75",
+            "type": "range",
+            "min": 1,
+            "max": 3,
+            "step": 0.05
+        },
+        {
+            "name": "letterSpacing",
+            "label": "字间距",
+            "group": "字体",
+            "note": "Adjusts the spacing between characters for body text elements, excluding headings, in EM.",
+            "value": "0.01",
+            "type": "range",
+            "min": -1,
+            "max": 1,
+            "step": 0.01
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "字体",
+            "note": "Note that not all fonts support the full range of weights; instead, they will typically support a standard range between 400 and 700. To see the exact range available for the selected body font, please visit our <a href='https://getpublii.com/docs/fonts.html' target='_blank'>documentation</a>.",
+            "size": "small thin"
+        },
+        {
+            "name": "fontBodyWeight",
+            "label": "常规字重",
+            "group": "字体",
+            "value": "400",
+            "type": "range",
+            "min": 100,
+            "max": 900,
+            "step": 1
+        },
+        {
+            "name": "fontBoldWeight",
+            "label": "粗体字重",
+            "group": "字体",
+            "value": "600",
+            "type": "range",
+            "min": 100,
+            "max": 900,
+            "step": 1
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "标题",
+            "group": "字体",
+            "size": "big"
+        },
+        {
+            "name": "fontHeadignsWeight",
+            "label": "标题字重 (H1-H6)",
+            "group": "字体",
+            "value": "600",
+            "type": "range",
+            "min": 100,
+            "max": 900,
+            "step": 1
+        },
+        {
+            "name": "fontHeadingsStyle",
+            "label": "标题样式 (H1-H6)",
+            "group": "字体",
+            "value": "normal",
+            "type": "select",
+            "options": [
+                {
+                    "label": "常规",
+                    "value": "normal"
+                },
+                {
+                    "label": "斜体",
+                    "value": "italic"
+                },
+                {
+                    "label": "倾斜",
+                    "value": "oblique"
+                }
+            ]
+        },
+        {
+            "name": "fontHeadingsLineHeight",
+            "label": "标题行高 (H1-H6)",
+            "group": "字体",
+            "note": "The default line-height for heading elements (h1, h2, h3, etc.).",
+            "value": "1.2",
+            "type": "range",
+            "min": 1,
+            "max": 3,
+            "step": 0.05
+        },
+        {
+            "name": "fontHeadingsletterSpacing",
+            "label": "标题字间距 (H1-H6)",
+            "group": "字体",
+            "note": "Adjusts the spacing between characters for heading elements (h1, h2, h3, etc.) in EM.",
+            "value": "0",
+            "type": "range",
+            "min": -1,
+            "max": 1,
+            "step": 0.01
+        },
+        {
+            "name": "fontHeadingsTransform",
+            "label": "标题大小写 (H1-H6)",
+            "group": "字体",
+            "value": "none",
+            "type": "select",
+            "options": [
+                {
+                    "label": "无",
+                    "value": "none"
+                },
+                {
+                    "label": "首字母大写",
+                    "value": "capitalize"
+                },
+                {
+                    "label": "小写",
+                    "value": "lowercase"
+                },
+                {
+                    "label": "大写",
+                    "value": "uppercase"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "分享按钮",
+            "note": "This section allows you to choose your preferred share buttons for various platforms. If you wish to add more, you can install the <a href='https://marketplace.getpublii.com/plugins/social-sharing/' target='_blank'>Social Sharing plugin</a> available on the Publii Marketplace.",
+            "size": "no-line"
+        },
+        {
+            "name": "shareFacebook",
+            "group": "分享按钮",
+            "label": "Facebook",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "shareTwitter",
+            "group": "分享按钮",
+            "label": "X（原 Twitter）",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "shareTwitterName",
+            "group": "分享按钮",
+            "note": "Enter your X account's handle here; it will be used when the X share button is clicked on your site e.g. 'via @XHandle'. If left blank, the default username of @SiteName will be used",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "shareTwitter",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "sharePinterest",
+            "group": "分享按钮",
+            "label": "Pinterest",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "shareMix",
+            "group": "分享按钮",
+            "label": "Mix",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "shareLinkedin",
+            "group": "分享按钮",
+            "label": "LinkedIn",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "shareBuffer",
+            "group": "分享按钮",
+            "label": "Buffer",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "shareWhatsApp",
+            "group": "分享按钮",
+            "label": "WhatsApp",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "页脚",
+            "note": "This section allows you to add follow buttons for various social media platforms. If you want to expand the available options, you can install the <a href='https://marketplace.getpublii.com/plugins/follow-buttons/' target='_blank'>Follow Buttons plugin</a> available on the Publii Marketplace.",
+            "size": "no-line"
+        },
+        {
+            "name": "socialButtons",
+            "group": "页脚",
+            "label": "关注按钮",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "socialFacebook",
+            "label": "Facebook",
+            "group": "页脚",
+            "placeholder": "请输入 Facebook 主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "socialTwitter",
+            "label": "X（原 Twitter）",
+            "group": "页脚",
+            "placeholder": "请输入 X（推特）主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "socialInstagram",
+            "label": "Instagram",
+            "group": "页脚",
+            "placeholder": "请输入 Instagram 主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "socialLinkedin",
+            "label": "LinkedIn",
+            "group": "页脚",
+            "placeholder": "请输入 LinkedIn 主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "socialVimeo",
+            "label": "Vimeo",
+            "group": "页脚",
+            "placeholder": "请输入 Vimeo 主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "socialPinterest",
+            "label": "Pinterest",
+            "group": "页脚",
+            "placeholder": "请输入 Pinterest 主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "socialYoutube",
+            "label": "YouTube",
+            "group": "页脚",
+            "placeholder": "请输入 YouTube 主页链接",
+            "value": "",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "socialButtons",
+                    "value": "true"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "页脚",
+            "size": "small thin"
+        },
+        {
+            "name": "copyrightText",
+            "label": "版权信息",
+            "group": "页脚",
+            "value": "© 2026 公司名称 版权所有 · 由 <a href=\"https://getpublii.com\" target=\"_blank\" rel=\"noopener\">Publii-CN</a> 驱动",
+            "type": "wysiwyg"
+        },
+        {
+            "name": "searchFeature",
+            "label": "搜索",
+            "group": "搜索",
+            "note": "Enable / disable the search box, which is usually located next to the top menu. In order to use the search function, you also need to install the search plugin.",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "createSearchPage",
+            "label": "搜索子页面",
+            "group": "搜索",
+            "note": "Enabling this option will create an additional search.html page which may be required by some search plugins to display the search results on a separate page.",
+            "value": false,
+            "type": "checkbox"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "图库",
+            "note": "To use the gallery functionality, you need to install the appropriate plugin. Please check the available gallery plugins in the <a rel=\"noopener noreferrer\" href=\"https://marketplace.getpublii.com/plugins/\" target=\"_blank\">Publii Marketplace</a>.",
+            "size": "no-line"
+        },
+        {
+            "name": "galleryItemGap",
+            "label": "图库项间距",
+            "group": "图库",
+            "note": "You can use the --baseline variable and multiply it, but you can also use other values like px or rem.",
+            "value": "calc(var(--baseline) * 1.5)",
+            "type": "text"
+        },
+        {
+            "name": "backToTopButton",
+            "group": "其他",
+            "label": "返回顶部按钮",
+            "value": true,
+            "type": "checkbox"
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "其他",
+            "size": "small"
+        },
+        {
+            "name": "formatDate",
+            "label": "日期格式",
+            "group": "其他",
+            "value": "custom",
+            "type": "select",
+            "options": [
+                {
+                    "label": "Nov 1, 2016",
+                    "value": "MMM D, YYYY"
+                },
+                {
+                    "label": "1 Nov 2016",
+                    "value": "D MMM YYYY"
+                },
+                {
+                    "label": "November 1, 2016",
+                    "value": "MMMM D, YYYY"
+                },
+                {
+                    "label": "1 November 2016",
+                    "value": "D MMMM YYYY"
+                },
+                {
+                    "label": "Sunday, November 1, 2016",
+                    "value": "dddd, MMMM D, YYYY"
+                },
+                {
+                    "label": "Sunday, 1 November 2016",
+                    "value": "dddd, D MMMM YYYY"
+                },
+                {
+                    "label": "November 1, 2016 10:02:05",
+                    "value": "MMMM D, YYYY HH:mm:ss"
+                },
+                {
+                    "label": "1 November 2016 10:02:05",
+                    "value": "D MMMM YYYY HH:mm:ss"
+                },
+                {
+                    "label": "01/21/2016",
+                    "value": "MM/DD/YYYY"
+                },
+                {
+                    "label": "21/01/2016",
+                    "value": "DD/MM/YYYY"
+                },
+                {
+                    "label": "Custom - create your own date format",
+                    "value": "custom"
+                }
+            ]
+        },
+        {
+            "name": "formatDateCustom",
+            "group": "其他",
+            "label": "自定义日期格式",
+            "note": "More details you can find <a href='https://github.com/taylorhakes/fecha' target='_blank'>here.</a>",
+            "value": "YYYY年M月D日",
+            "type": "text",
+            "dependencies": [
+                {
+                    "field": "formatDate",
+                    "value": "custom"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "其他",
+            "size": "small"
+        },
+        {
+            "name": "lazyLoadEffect",
+            "label": "懒加载效果",
+            "group": "其他",
+            "note": "This option works only if the 'Media lazy load' option is enabled in the Website Speed tab under Site Settings",
+            "value": "fadein",
+            "type": "select",
+            "options": [
+                {
+                    "label": "淡入",
+                    "value": "fadein"
+                },
+                {
+                    "label": "无",
+                    "value": "none"
+                }
+            ]
+        },
+        {
+            "name": "separator",
+            "type": "separator",
+            "label": "",
+            "group": "其他",
+            "size": "small"
+        },
+        {
+            "name": "faviconUpload",
+            "label": "上传网站图标 (favicon)",
+            "group": "其他",
+            "note": "The ideal size of a favicon is 16x16 pixels. Save your favicon as either favicon.png or favicon.ico",
+            "value": "",
+            "type": "smallupload",
+            "upload": true
+        },
+        {
+            "name": "faviconExtension",
+            "label": "网站图标扩展名",
+            "group": "其他",
+            "value": "image/x-icon",
+            "type": "select",
+            "options": [
+                {
+                    "label": ".ico",
+                    "value": "image/x-icon"
+                },
+                {
+                    "label": ".png",
+                    "value": "image/png"
+                }
+            ]
+        }
+    ],
+    "postConfig": [
+        {
+            "name": "displayDate",
+            "label": "显示日期",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayAuthor",
+            "label": "显示作者",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayLastUpdatedDate",
+            "label": "显示最后更新日期",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayTags",
+            "label": "显示标签",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayShareButtons",
+            "label": "显示分享按钮",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayAuthorBio",
+            "label": "显示作者简介",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayPostNavigation",
+            "label": "显示文章导航",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayRelatedPosts",
+            "label": "显示相关文章",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayComments",
+            "label": "显示评论",
+            "value": 0,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "pageConfig": [
+        {
+            "name": "displayDate",
+            "label": "显示日期",
+            "value": 0,
+            "type": "select",
+            "pageTemplates": "!empty",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayAuthor",
+            "label": "显示作者",
+            "value": 0,
+            "type": "select",
+            "pageTemplates": "!empty",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayLastUpdatedDate",
+            "label": "显示最后更新日期",
+            "value": 0,
+            "type": "select",
+            "pageTemplates": "!empty",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayShareButtons",
+            "label": "显示分享按钮",
+            "value": 0,
+            "type": "select",
+            "pageTemplates": "!empty",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayAuthorBio",
+            "label": "显示作者简介",
+            "value": 0,
+            "type": "select",
+            "pageTemplates": "!empty",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayChildPages",
+            "label": "显示子页面",
+            "value": 0,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayComments",
+            "label": "显示评论",
+            "value": 0,
+            "type": "select",
+            "pageTemplates": "!empty",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "authorConfig": [
+        {
+            "name": "displayFeaturedImage",
+            "label": "显示特色图片",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayAvatar",
+            "label": "显示头像",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayPostCounter",
+            "label": "显示文章数量",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayDescription",
+            "label": "显示作者简介",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayWebsite",
+            "label": "显示作者网站",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayPostList",
+            "label": "显示文章列表",
+            "note": "Disabling the post list can cause duplicate content issues. To avoid this, please disable authors pagination in the SEO section of your site settings.",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "tagConfig": [
+        {
+            "name": "displayFeaturedImage",
+            "label": "显示特色图片",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayPostCounter",
+            "label": "显示文章数量",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayDescription",
+            "label": "显示标签描述",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayPostList",
+            "label": "显示文章列表",
+            "note": "Disabling the post list can cause duplicate content issues. To avoid this, please disable tag pagination in the SEO section of your site settings.",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        }
+    ],
+    "files": {
+        "ignoreAssets": [
+            "scss",
+            ".DS_Store"
+        ],
+        "assetsPath": "assets",
+        "useDynamicAssets": true,
+        "partialsPath": "partials",
+        "responsiveImages": {
+            "contentImages": {
+                "sizes": "(max-width: 1920px) 100vw, 1920px",
+                "dimensions": {
+                    "xs": {
+                        "width": 640,
+                        "height": "auto"
+                    },
+                    "sm": {
+                        "width": 768,
+                        "height": "auto"
+                    },
+                    "md": {
+                        "width": 1024,
+                        "height": "auto"
+                    },
+                    "lg": {
+                        "width": 1366,
+                        "height": "auto"
+                    },
+                    "xl": {
+                        "width": 1600,
+                        "height": "auto"
+                    },
+                    "2xl": {
+                        "width": 1920,
+                        "height": "auto"
+                    }
+                }
+            },
+            "featuredImages": {
+                "sizes": {
+                    "hero": "88vw",
+                    "feed": "(min-width: 600px) calc(4.38vw + 143px), 87.86vw"
+                },
+                "dimensions": {
+                    "xs": {
+                        "width": 640,
+                        "height": "auto",
+                        "group": "hero,feed"
+                    },
+                    "sm": {
+                        "width": 768,
+                        "height": "auto",
+                        "group": "hero,feed"
+                    },
+                    "md": {
+                        "width": 1024,
+                        "height": "auto",
+                        "group": "hero,feed"
+                    },
+                    "lg": {
+                        "width": 1366,
+                        "height": "auto",
+                        "group": "hero"
+                    },
+                    "xl": {
+                        "width": 1600,
+                        "height": "auto",
+                        "group": "hero"
+                    },
+                    "2xl": {
+                        "width": 1920,
+                        "height": "auto",
+                        "group": "hero"
+                    }
+                }
+            },
+            "tagImages": {
+                "sizes": "88vw",
+                "dimensions": {
+                    "xs": {
+                        "width": 640,
+                        "height": "auto"
+                    },
+                    "sm": {
+                        "width": 768,
+                        "height": "auto"
+                    },
+                    "md": {
+                        "width": 1024,
+                        "height": "auto"
+                    },
+                    "lg": {
+                        "width": 1366,
+                        "height": "auto"
+                    },
+                    "xl": {
+                        "width": 1600,
+                        "height": "auto"
+                    },
+                    "2xl": {
+                        "width": 1920,
+                        "height": "auto"
+                    }
+                }
+            },
+            "authorImages": {
+                "sizes": "88vw",
+                "dimensions": {
+                    "xs": {
+                        "width": 640,
+                        "height": "auto"
+                    },
+                    "sm": {
+                        "width": 768,
+                        "height": "auto"
+                    },
+                    "md": {
+                        "width": 1024,
+                        "height": "auto"
+                    },
+                    "lg": {
+                        "width": 1366,
+                        "height": "auto"
+                    },
+                    "xl": {
+                        "width": 1600,
+                        "height": "auto"
+                    },
+                    "2xl": {
+                        "width": 1920,
+                        "height": "auto"
+                    }
+                }
+            },
+            "optionImages": {
+                "sizes": "88vw",
+                "dimensions": {
+                    "xs": {
+                        "width": 640,
+                        "height": "auto"
+                    },
+                    "sm": {
+                        "width": 768,
+                        "height": "auto"
+                    },
+                    "md": {
+                        "width": 1024,
+                        "height": "auto"
+                    },
+                    "lg": {
+                        "width": 1366,
+                        "height": "auto"
+                    },
+                    "xl": {
+                        "width": 1600,
+                        "height": "auto"
+                    },
+                    "2xl": {
+                        "width": 1920,
+                        "height": "auto"
+                    }
+                }
+            },
+            "galleryImages": {
+                "sizes": "",
+                "dimensions": {
+                    "thumbnail": {
+                        "width": 720,
+                        "height": "auto"
+                    }
+                }
+            }
+        }
+    },
+    "customElements": [
+        {
+            "label": "Ordered list",
+            "cssClasses": "ordered-list",
+            "selector": "ol"
+        },
+        {
+            "label": "Drop cap",
+            "cssClasses": "dropcap",
+            "selector": "p"
+        },
+        {
+            "label": "Info",
+            "cssClasses": "msg msg--info",
+            "selector": "p"
+        },
+        {
+            "label": "Highlight",
+            "cssClasses": "msg msg--highlight ",
+            "selector": "p"
+        },
+        {
+            "label": "Success",
+            "cssClasses": "msg msg--success",
+            "selector": "p"
+        },
+        {
+            "label": "Warning",
+            "cssClasses": "msg msg--warning",
+            "selector": "p"
+        },
+        {
+            "label": "Table bordered",
+            "cssClasses": "table-bordered",
+            "selector": "table"
+        },
+        {
+            "label": "Table striped",
+            "cssClasses": "table-striped",
+            "selector": "table"
+        },
+        {
+            "label": "Table title",
+            "cssClasses": "table-title",
+            "selector": "table"
+        }
+    ]
+}
