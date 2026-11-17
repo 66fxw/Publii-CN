@@ -555,6 +555,7 @@ class App {
             this.appConfig = JSON.parse(FileHelper.readFileSync(this.appConfigPath, 'utf8'));
             this.appConfig = Utils.mergeObjects(JSON.parse(JSON.stringify(defaultAstAppConfig)), this.appConfig);
             this.removeLegacyPreviewLocation();
+            this.migrateDefaultLanguageToChinese();
         } catch (e) {
             if (this.hasPermissionsErrors(e)) {
                 return false;
@@ -586,6 +587,28 @@ class App {
             }
         } catch (error) {
             console.log('Unable to clean the temporary directory:', error);
+        }
+    }
+
+    // Publii-CN: switch legacy installations that never explicitly chose a UI
+    // language from the old en-gb default to 简体中文. The marker makes this a
+    // one-time migration, so a user who later picks another language keeps it.
+    migrateDefaultLanguageToChinese () {
+        if (this.appConfig.cnLanguageMigrated === true) {
+            return;
+        }
+
+        if (this.appConfig.language === 'en-gb' && this.appConfig.languageType === 'default') {
+            this.appConfig.language = 'zh-cn';
+            this.appConfig.languageType = 'default';
+        }
+
+        this.appConfig.cnLanguageMigrated = true;
+
+        try {
+            fs.writeFileSync(this.appConfigPath, JSON.stringify(this.appConfig, null, 4), {'flags': 'w'});
+        } catch (error) {
+            console.log('Unable to persist the default language migration:', error);
         }
     }
 

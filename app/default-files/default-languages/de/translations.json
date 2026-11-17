@@ -2212,5 +2212,25 @@
         "menusHint": "Menüs werden im Menü-Bildschirm konfiguriert.",
         "noMenus": "Keine Menüs konfiguriert.",
         "manageMenus": "Menüs verwalten"
+    },
+    "wpCategories": {
+        "title": "Kategorien",
+        "search": "Kategorien filtern oder suchen",
+        "addNew": "Kategorie hinzufügen",
+        "intro": "Kategorien gruppieren Ihre Beiträge. Weisen Sie Kategorien in der Beitrags-Seitenleiste zu.",
+        "rename": "Umbenennen",
+        "actions": "Aktionen",
+        "nameLabel": "Kategoriename",
+        "emptyTitle": "Noch keine Kategorien",
+        "emptyDesc": "Fügen Sie die erste Kategorie hinzu.",
+        "added": "Kategorie hinzugefügt.",
+        "updated": "Kategorie aktualisiert.",
+        "deleted": "Kategorie gelöscht.",
+        "saveError": "Speichern fehlgeschlagen.",
+        "deleteConfirm": "Kategorie \"{name}\" löschen? Beiträge werden nicht gelöscht."
+    },
+    "wpEditor": {
+        "noCategoriesYet": "Noch keine Kategorien.",
+        "manageCategories": "Kategorien verwalten"
     }
 }

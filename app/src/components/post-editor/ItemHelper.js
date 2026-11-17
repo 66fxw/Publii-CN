@@ -116,6 +116,10 @@ class ItemHelper {
             }
             
             preparedData.additionalData.mainTag = itemData.mainTag;
+            // Publii-CN: 分类 ID 数组随文章存储，编辑时可回显、渲染时可读取
+            preparedData.additionalData.categories = Array.isArray(itemData.categories)
+                ? [...new Set(itemData.categories)]
+                : [];
             preparedData.postViewSettings = itemViewSettings;
         } else if (itemType === 'page') {
             preparedData.pageViewSettings = itemViewSettings;
@@ -183,6 +187,11 @@ class ItemHelper {
             }
 
             itemData.mainTag = data.additionalData.mainTag || '';
+
+            // Publii-CN: 读取文章关联的分类 ID（兼容不存在的旧数据）
+            itemData.categories = Array.isArray(data.additionalData.categories)
+                ? data.additionalData.categories.slice()
+                : [];
         }
 
         // Set author

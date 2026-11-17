@@ -324,6 +324,47 @@
                         </div>
                     </div>
 
+                    <!-- Publii-CN: 文章分类（多选，存于 additional_data.categories） -->
+                    <div
+                        v-if="itemType === 'post'"
+                        class="options-sidebar-item">
+                        <div
+                            :class="{ 'options-sidebar-header': true, 'is-open': openedItem === 'categories' }"
+                            @click="openItem('categories')">
+                            <icon
+                                class="options-sidebar-icon"
+                                size="s"
+                                name="sidebar-tags"/>
+
+                            <span class="options-sidebar-label">{{ $t('wpCategories.title') }}</span>
+                        </div>
+
+                        <div class="post-editor-settings" ref="categories-content-wrapper">
+                            <div class="post-editor-settings-content" ref="categories-content">
+                                <div class="post-categories-list">
+                                    <label
+                                        v-for="category in availableCategories"
+                                        :key="category.id"
+                                        class="post-category-option">
+                                        <input
+                                            type="checkbox"
+                                            :value="category.id"
+                                            :checked="$parent.postData.categories.indexOf(category.id) > -1"
+                                            @change="toggleCategory(category.id, $event)" />
+                                        <span>{{ category.name }}</span>
+                                    </label>
+
+                                    <p v-if="!availableCategories.length" class="post-categories-empty">
+                                        {{ $t('wpEditor.noCategoriesYet') }}
+                                        <router-link :to="'/site/' + $route.params.name + '/categories/'">
+                                            {{ $t('wpEditor.manageCategories') }}
+                                        </router-link>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="options-sidebar-item">
                         <div
                             :class="{ 'options-sidebar-header': true, 'is-open': openedItem === 'seo' }"
@@ -643,6 +684,11 @@ export default {
         availableTags () {
             return this.$store.state.currentSite.tags.map(tag => tag.name);
         },
+        // Publii-CN: 站点分类列表（供编辑器多选）
+        availableCategories () {
+            const config = this.$store.state.currentSite.config || {};
+            return Array.isArray(config.categories) ? config.categories : [];
+        },
         metaRobotsOptions () {
             return {
                 'index, follow': this.$t('ui.indexFollow'),
@@ -826,6 +872,23 @@ export default {
             }
 
             this.$parent.postData.tags.push(newTag);
+        },
+        // Publii-CN: 勾选/取消勾选文章分类
+        toggleCategory (categoryID, event) {
+            const checked = event.target.checked;
+            const postData = this.$parent.postData;
+
+            if (!Array.isArray(postData.categories)) {
+                postData.categories = [];
+            }
+
+            const index = postData.categories.indexOf(categoryID);
+
+            if (checked && index === -1) {
+                postData.categories.push(categoryID);
+            } else if (!checked && index > -1) {
+                postData.categories.splice(index, 1);
+            }
         },
         removeTag (removedTagName) {
             let removedTagID = this.getTagIdByName(removedTagName);
@@ -1102,6 +1165,39 @@ export default {
               font-weight: var(--font-weight-regular);
               line-height: 1.8;
            }
+        }
+    }
+
+    /* Publii-CN: 文章分类多选列表 */
+    .post-categories-list {
+        display: flex;
+        flex-direction: column;
+        gap: .6rem;
+        padding: .4rem 0;
+
+        .post-category-option {
+            align-items: center;
+            cursor: pointer;
+            display: flex;
+            font-size: var(--font-size-ui-md);
+            gap: .8rem;
+            line-height: 1.5;
+
+            input[type="checkbox"] {
+                cursor: pointer;
+                flex-shrink: 0;
+            }
+        }
+
+        .post-categories-empty {
+            color: var(--text-light-color);
+            font-size: var(--font-size-ui-sm);
+            line-height: 1.6;
+            margin: 0;
+
+            a {
+                color: var(--link-primary-color);
+            }
         }
     }
 

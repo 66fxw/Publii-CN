@@ -2198,5 +2198,25 @@
         "menusHint": "菜单请在“菜单”页面中配置。",
         "noMenus": "暂未配置菜单。",
         "manageMenus": "管理菜单"
+    },
+    "wpCategories": {
+        "title": "分类",
+        "search": "筛选或搜索分类",
+        "addNew": "添加分类",
+        "intro": "分类用于归类文章。在文章编辑器的侧边栏中可以为文章指定分类。",
+        "rename": "重命名",
+        "actions": "操作",
+        "nameLabel": "分类名称",
+        "emptyTitle": "暂无分类",
+        "emptyDesc": "添加第一个分类来归类您的文章。",
+        "added": "分类已添加。",
+        "updated": "分类已更新。",
+        "deleted": "分类已删除。",
+        "saveError": "保存失败，请重试。",
+        "deleteConfirm": "确定删除分类“{name}”吗？文章不会被删除，只会解除与该分类的关联。"
+    },
+    "wpEditor": {
+        "noCategoriesYet": "暂无分类。",
+        "manageCategories": "管理分类"
     }
 }

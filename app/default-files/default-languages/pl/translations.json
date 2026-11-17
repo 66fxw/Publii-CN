@@ -2200,5 +2200,25 @@
         "menusHint": "Menu konfiguruje się w panelu Menu.",
         "noMenus": "Brak skonfigurowanych menu.",
         "manageMenus": "Zarządzaj menu"
+    },
+    "wpCategories": {
+        "title": "Kategorie",
+        "search": "Filtruj lub szukaj kategorii",
+        "addNew": "Dodaj kategorię",
+        "intro": "Kategorie grupują wpisy. Przypisuj kategorie w panelu edytora wpisu.",
+        "rename": "Zmień nazwę",
+        "actions": "Akcje",
+        "nameLabel": "Nazwa kategorii",
+        "emptyTitle": "Brak kategorii",
+        "emptyDesc": "Dodaj pierwszą kategorię.",
+        "added": "Kategoria dodana.",
+        "updated": "Kategoria zaktualizowana.",
+        "deleted": "Kategoria usunięta.",
+        "saveError": "Nie udało się zapisać.",
+        "deleteConfirm": "Usunąć kategorię \"{name}\"? Wpisy nie zostaną usunięte."
+    },
+    "wpEditor": {
+        "noCategoriesYet": "Brak kategorii.",
+        "manageCategories": "Zarządzaj kategoriami"
     }
 }

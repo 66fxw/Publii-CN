@@ -264,6 +264,7 @@ export default {
 
                 if (data.status === true) {
                     this.$store.commit('replaceSiteConfig', { newSettings: newSettings });
+                    this.$bus.$emit('categories-updated');
                     this.$bus.$emit('message-display', {
                         message: this.$t(successMessageKey),
                         type: 'success',

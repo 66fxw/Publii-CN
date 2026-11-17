@@ -53,6 +53,11 @@ export default {
                 label: this.$t('ui.tags'),
                 url: '/site/' + siteName + '/tags/'
             }, {
+                section: 'categories',
+                icon: 'tags',
+                label: this.$t('wpCategories.title'),
+                url: '/site/' + siteName + '/categories/'
+            }, {
                 icon: 'menus',
                 label: this.$t('ui.menus'),
                 url: '/site/' + siteName + '/menus/'

@@ -2198,5 +2198,25 @@
         "menusHint": "Menus are configured on the Menus screen.",
         "noMenus": "No menus configured.",
         "manageMenus": "Manage menus"
+    },
+    "wpCategories": {
+        "title": "Categories",
+        "search": "Filter or search categories",
+        "addNew": "Add category",
+        "intro": "Categories group your articles. Assign categories in the article editor sidebar.",
+        "rename": "Rename",
+        "actions": "Actions",
+        "nameLabel": "Category name",
+        "emptyTitle": "No categories yet",
+        "emptyDesc": "Add your first category to organise articles.",
+        "added": "Category added.",
+        "updated": "Category updated.",
+        "deleted": "Category deleted.",
+        "saveError": "Could not save. Please try again.",
+        "deleteConfirm": "Delete category \"{name}\"? Articles are not deleted, only the category link is removed."
+    },
+    "wpEditor": {
+        "noCategoriesYet": "No categories yet.",
+        "manageCategories": "Manage categories"
     }
 }

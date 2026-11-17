@@ -13,6 +13,7 @@ const EditorBlockEditor = () => import('../components/PostEditorBlockEditor');
 const EditorMarkdown = () => import('../components/PostEditorMarkdown');
 const EditorTinyMCE = () => import('../components/PostEditorTinyMCE');
 const Tags = () => import('../components/Tags');
+const Categories = () => import('../components/Categories');
 const Menus = () => import('../components/Menus');
 const Authors = () => import('../components/Authors');
 const Tools = () => import('../components/Tools');
@@ -119,6 +120,10 @@ export default new Router({
                 {
                     path: 'tags',
                     component: Tags
+                },
+                {
+                    path: 'categories',
+                    component: Categories
                 },
                 {
                     path: 'authors',

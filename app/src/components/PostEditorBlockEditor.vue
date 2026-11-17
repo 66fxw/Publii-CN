@@ -85,6 +85,7 @@ export default {
                 slug: '',
                 author: 1,
                 tags: [],
+                categories: [], // Publii-CN: 文章所属分类 ID 数组
                 mainTag: '',
                 template: '',
                 creationDate: {

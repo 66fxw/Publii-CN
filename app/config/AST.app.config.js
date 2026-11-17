@@ -24,8 +24,10 @@ const AstAppConfig = {
     authorsOrdering: 'id DESC',
     appAppearance: 'publii',
     appTheme: 'system',
-    language: 'en-gb',
+    // Publii-CN: 简体中文为默认界面语言（新安装生效）
+    language: 'zh-cn',
     languageType: 'default',
+    cnLanguageMigrated: true,
     enableAdvancedPreview: false,
     previewServerEnabled: true,
     previewServerPort: 3000,
