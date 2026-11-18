@@ -259,7 +259,12 @@ export default {
                 this.saving = false;
 
                 if (data.status === true) {
-                    this.$store.commit('replaceSiteConfig', { newSettings: newSettings });
+                    // 传入 oldName：replaceSiteConfig 需要它更新 sites map；
+                    // 缺失会导致 state.sites[undefined] 解析异常，界面不刷新。
+                    this.$store.commit('replaceSiteConfig', {
+                        newSettings: newSettings,
+                        oldName: siteName
+                    });
                     this.$bus.$emit('message-display', {
                         message: this.$t(messageKey),
                         type: 'success',

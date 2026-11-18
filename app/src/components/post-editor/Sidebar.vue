@@ -334,7 +334,8 @@
                             <icon
                                 class="options-sidebar-icon"
                                 size="s"
-                                name="sidebar-tags"/>
+                                iconset="svg-map"
+                                name="hierarchy"/>
 
                             <span class="options-sidebar-label">{{ $t('wpCategories.title') }}</span>
                         </div>

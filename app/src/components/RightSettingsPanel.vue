@@ -263,7 +263,10 @@ export default {
                 this.saving = false;
 
                 if (data.status === true) {
-                    this.$store.commit('replaceSiteConfig', { newSettings: newSettings });
+                    this.$store.commit('replaceSiteConfig', {
+                        newSettings: newSettings,
+                        oldName: siteName
+                    });
                     this.$bus.$emit('categories-updated');
                     this.$bus.$emit('message-display', {
                         message: this.$t(successMessageKey),
