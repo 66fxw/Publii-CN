@@ -7,7 +7,7 @@
          <div class="wrapper">
             <span class="cat-nav__label">热门分类</span>
             {{#each @config.categories}}
-               <span class="cat-nav__item">{{name}}{{#if postsCounter}}<sup>{{postsCounter}}</sup>{{/if}}</span>
+               <a class="cat-nav__item" href="{{url}}">{{name}}{{#if postsCounter}}<sup>{{postsCounter}}</sup>{{/if}}</a>
             {{/each}}
          </div>
       </nav>
@@ -142,7 +142,7 @@
                   <h3 class="widget__title">文章分类</h3>
                   <div class="tag-cloud">
                      {{#each @config.categories}}
-                        <span class="cat-nav__item">{{name}}{{#if postsCounter}}<sup>{{postsCounter}}</sup>{{/if}}</span>
+                        <a class="cat-nav__item" href="{{url}}">{{name}}{{#if postsCounter}}<sup>{{postsCounter}}</sup>{{/if}}</a>
                      {{/each}}
                   </div>
                </div>

@@ -72,6 +72,27 @@ class URLHelper {
     }
 
     /**
+     * Publii-CN: creates the permalink for a category archive page.
+     */
+    static createCategoryPermalink(domain, urlsConfig, categoryName, addIndexHtml = false) {
+        let url = domain + '/' + URLHelper.createSlug(categoryName) + '/';
+
+        if (urlsConfig.categoriesPrefix) {
+            url = domain + '/' + urlsConfig.categoriesPrefix + '/' + URLHelper.createSlug(categoryName) + '/';
+
+            if (urlsConfig.postsPrefix && urlsConfig.categoriesPrefixAfterPostsPrefix) {
+                url = domain + '/' + urlsConfig.postsPrefix + '/' + urlsConfig.categoriesPrefix + '/' + URLHelper.createSlug(categoryName) + '/';
+            }
+        }
+
+        if (addIndexHtml) {
+            url += 'index.html';
+        }
+
+        return url;
+    }
+
+    /**
      * Creates pagination link for a given URL type
      *
      * @param siteConfig
@@ -129,6 +150,15 @@ class URLHelper {
 
             if (config.urls.postsPrefix && config.urls.tagsPrefixAfterPostsPrefix) {
                 optionalPrefix = config.urls.postsPrefix + '/' + config.urls.tagsPrefix + '/';
+            }
+        }
+
+        // Publii-CN: category archive pagination
+        if(pageType === 'category' && config.urls.categoriesPrefix !== '') {
+            optionalPrefix = config.urls.categoriesPrefix + '/';
+
+            if (config.urls.postsPrefix && config.urls.categoriesPrefixAfterPostsPrefix) {
+                optionalPrefix = config.urls.postsPrefix + '/' + config.urls.categoriesPrefix + '/';
             }
         }
 

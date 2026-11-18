@@ -1,0 +1,35 @@
+{{> head}}
+{{> navbar}}
+<main class="page page--category">
+   {{#category}}
+      <div class="hero hero--noimage">
+         <header class="hero__content {{#checkIf @config.custom.alignHero '==' "center" }}hero__content--centered{{/checkIf}}">
+            <div class="wrapper">
+               <h1>{{name}}</h1>
+               <p class="page__desc">分类栏目 · 共 {{posts.length}} 篇文章</p>
+            </div>
+         </header>
+      </div>
+      <div class="wrapper">
+         <ul class="feed">
+            {{#each ../posts}}
+               <li class="feed__item">
+                  <div class="feed__content">
+                     <h2 class="feed__title"><a href="{{url}}">{{title}}</a></h2>
+                     {{#if hasCustomExcerpt}}
+                        {{{ excerpt }}}
+                     {{else}}
+                        <p>{{{ excerpt }}}</p>
+                     {{/if}}
+                  </div>
+               </li>
+            {{/each}}
+            {{#unless ../posts.length}}
+               <li class="feed__item"><p>该分类下暂无文章。</p></li>
+            {{/unless}}
+         </ul>
+         {{> pagination}}
+      </div>
+   {{/category}}
+</main>
+{{> footer}}

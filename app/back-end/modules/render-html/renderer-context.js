@@ -386,9 +386,17 @@ class RendererContext {
                 }
             }
 
+            let addIndexHtml = URLHelper.usesIndexHtml(this.renderer);
+
             for (let category of categories) {
                 category.posts = postCategoriesMap.get(category.id) || [];
                 category.postsCounter = category.posts.length;
+                category.url = URLHelper.createCategoryPermalink(
+                    this.siteConfig.domain,
+                    this.siteConfig.advanced.urls,
+                    category.slug || category.name,
+                    addIndexHtml
+                );
             }
         }
 
@@ -406,6 +414,7 @@ class RendererContext {
                 searchUrl: searchUrl,
                 errorUrl: errorUrl,
                 tagsUrl: this.getTagsUrl(),
+                categoriesUrl: this.getCategoriesUrl(),
                 postsUrl: this.getPostsUrl(),
                 pageUrl: this.getPageUrl(context, paginationData, itemSlug, itemContext),
                 name: siteNameValue,
@@ -429,6 +438,7 @@ class RendererContext {
                 },
                 createAuthorPages: RendererHelpers.getRendererOptionValue('createAuthorPages', this.themeConfig),
                 createTagPages: RendererHelpers.getRendererOptionValue('createTagPages', this.themeConfig),
+                createCategoryPages: RendererHelpers.getRendererOptionValue('createCategoryPages', this.themeConfig),
                 createSearchPage: RendererHelpers.getRendererOptionValue('createSearchPage', this.themeConfig),
                 create404page: RendererHelpers.getRendererOptionValue('create404page', this.themeConfig),
                 isFirstPage: this.getFirstPageContextData(paginationData),
@@ -573,13 +583,34 @@ class RendererContext {
             authors[i].posts = this.getContentStructureAuthorPosts(authors[i].id);
         }
 
+        // Publii-CN: expose categories (with their published posts) to contentStructure
+        let categories = [];
+
+        if (Array.isArray(this.siteConfig.categories)) {
+            for (let category of this.siteConfig.categories) {
+                let categoryCopy = JSON.parse(JSON.stringify(category));
+                categoryCopy.posts = posts.filter(post =>
+                    (post.categories || []).some(postCategory => postCategory.id === category.id)
+                );
+                categoryCopy.postsCounter = categoryCopy.posts.length;
+                categoryCopy.url = URLHelper.createCategoryPermalink(
+                    this.siteConfig.domain,
+                    this.siteConfig.advanced.urls,
+                    category.slug || category.name,
+                    URLHelper.usesIndexHtml(this.renderer)
+                );
+                categories.push(categoryCopy);
+            }
+        }
+
         let pagesStructure = this.renderer.cachedItems.pagesStructure;
         let finalContentStructure = {
             pages,
             pagesStructure,
             posts,
             tags,
-            authors
+            authors,
+            categories
         };
 
         if (this.renderer.plugins.hasModifiers('contentStructure')) {
@@ -761,6 +792,16 @@ class RendererContext {
             } else {
                 return blogBaseUrl + '/';
             }
+        } else if (context === 'categories') {
+            if (this.siteConfig.advanced.urls.categoriesPrefix !== '') {
+                if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                    return blogBaseUrl + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/';
+                }
+
+                return blogBaseUrl + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/';
+            } else {
+                return blogBaseUrl + '/';
+            }
         } else if (context === 'author') {
             if (!paginationData || paginationData.currentPage === 1) {
                 if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.authorsPrefixAfterPostsPrefix) {
@@ -800,6 +841,36 @@ class RendererContext {
                 } else {
                     if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.tagsPrefixAfterPostsPrefix) {
                         return blogBaseUrl + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + itemSlug + '/' + pagePart + '/' + paginationData.currentPage + '/';    
+                    }
+
+                    return blogBaseUrl + '/' + itemSlug + '/' + pagePart + '/' + paginationData.currentPage + '/';
+                }
+            }
+        } else if (context === 'category') {
+            if (!paginationData || paginationData.currentPage === 1) {
+                if (this.siteConfig.advanced.urls.categoriesPrefix !== '') {
+                    if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                        return blogBaseUrl + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/' + itemSlug + '/';
+                    }
+
+                    return blogBaseUrl + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/' + itemSlug + '/';
+                } else {
+                    if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                        return blogBaseUrl + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + itemSlug + '/';
+                    }
+
+                    return blogBaseUrl + '/' + itemSlug + '/';
+                }
+            } else {
+                if (this.siteConfig.advanced.urls.categoriesPrefix !== '') {
+                    if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                        return blogBaseUrl + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/' + itemSlug + '/' + pagePart + '/' + paginationData.currentPage + '/';
+                    }
+
+                    return blogBaseUrl + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/' + itemSlug + '/' + pagePart + '/' + paginationData.currentPage + '/';
+                } else {
+                    if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                        return blogBaseUrl + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + itemSlug + '/' + pagePart + '/' + paginationData.currentPage + '/';
                     }
 
                     return blogBaseUrl + '/' + itemSlug + '/' + pagePart + '/' + paginationData.currentPage + '/';
@@ -877,6 +948,25 @@ class RendererContext {
         }
 
         return tagsUrl;
+    }
+
+    // Publii-CN: URL of the categories list page
+    getCategoriesUrl () {
+        let categoriesUrl = this.siteConfig.domain + '/';
+
+        if (this.siteConfig.advanced.urls.categoriesPrefix !== '') {
+            if (this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                categoriesUrl = this.siteConfig.domain + '/' + this.siteConfig.advanced.urls.postsPrefix + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/';
+            } else {
+                categoriesUrl = this.siteConfig.domain + '/' + this.siteConfig.advanced.urls.categoriesPrefix + '/';
+            }
+        }
+
+        if (URLHelper.isFilePreview(this.renderer)) {
+            categoriesUrl += 'index.html';
+        }
+
+        return categoriesUrl;
     }
 
     getPostsUrl () {

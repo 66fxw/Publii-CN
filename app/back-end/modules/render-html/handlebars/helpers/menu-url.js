@@ -101,6 +101,23 @@ function menuURLHelper(rendererInstance, Handlebars) {
             }
         }
 
+        // Link to the category pages (Publii-CN)
+        if (this.type === 'category') {
+            output = baseUrl + '/' + this.link + '/';
+
+            if (rendererInstance.siteConfig.advanced.urls.categoriesPrefix !== '') {
+                output = baseUrl + '/' + rendererInstance.siteConfig.advanced.urls.categoriesPrefix + '/' + this.link + '/';
+            }
+
+            if (rendererInstance.siteConfig.advanced.urls.postsPrefix && rendererInstance.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix) {
+                output = baseUrl + '/' + rendererInstance.siteConfig.advanced.urls.postsPrefix + '/' + rendererInstance.siteConfig.advanced.urls.categoriesPrefix + '/' + this.link + '/';
+            }
+
+            if (URLHelper.usesIndexHtml(rendererInstance)) {
+                output += 'index.html';
+            }
+        }
+
         // Link to the author pages
         if (this.type === 'author') {
             output = baseUrl + '/' + rendererInstance.siteConfig.advanced.urls.authorsPrefix + '/' + slug(this.link) + '/';

@@ -1,0 +1,25 @@
+{{> head}}
+{{> navbar}}
+<main class="page page--categories">
+   <div class="hero hero--noimage">
+      <header class="hero__content">
+         <div class="wrapper">
+            <h1>文章分类</h1>
+            <p class="page__desc">共 {{categoriesNumber}} 个分类栏目</p>
+         </div>
+      </header>
+   </div>
+   <div class="wrapper">
+      <ul class="feed feed--grid">
+         {{#each categories}}
+            <li class="feed__item">
+               <div class="feed__content">
+                  <h2 class="h3"><a href="{{url}}">{{name}}</a></h2>
+                  <p>{{postsCounter}} 篇文章</p>
+               </div>
+            </li>
+         {{/each}}
+      </ul>
+   </div>
+</main>
+{{> footer}}

@@ -28,7 +28,9 @@
         "customHTML": {
             "afterPost": "After every post",
             "afterPage": "After every page"
-        }
+        },
+        "createCategoryPages": true,
+        "createCategoriesList": true
     },
     "supportedFeatures": {
         "blockEditor": true,
@@ -44,7 +46,9 @@
         "customComments": true,
         "embedConsents": true,
         "pages": true,
-        "postsPage": true
+        "postsPage": true,
+        "categoryPages": true,
+        "categoriesList": true
     },
     "pageTemplates": {
         "empty": "Empty container"
@@ -59,6 +63,12 @@
         {
             "name": "tagsPostsPerPage",
             "label": "Tags posts per page",
+            "value": 5,
+            "type": "number"
+        },
+        {
+            "name": "categoriesPostsPerPage",
+            "label": "每页文章数（分类）",
             "value": 5,
             "type": "number"
         },

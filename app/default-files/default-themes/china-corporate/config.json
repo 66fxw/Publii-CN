@@ -1,6 +1,6 @@
 {
     "name": "China Corporate",
-    "version": "1.1.0.0",
+    "version": "1.2.0.0",
     "author": "Publii-CN",
     "menus": {
         "mainMenu": {
@@ -28,7 +28,9 @@
         "customHTML": {
             "afterPost": "每篇文章之后",
             "afterPage": "每个页面之后"
-        }
+        },
+        "createCategoryPages": true,
+        "createCategoriesList": true
     },
     "supportedFeatures": {
         "blockEditor": true,
@@ -44,7 +46,9 @@
         "customComments": true,
         "embedConsents": true,
         "pages": true,
-        "postsPage": true
+        "postsPage": true,
+        "categoryPages": true,
+        "categoriesList": true
     },
     "pageTemplates": {
         "empty": "空白容器"
@@ -59,6 +63,12 @@
         {
             "name": "tagsPostsPerPage",
             "label": "标签页每页文章数",
+            "value": 5,
+            "type": "number"
+        },
+        {
+            "name": "categoriesPostsPerPage",
+            "label": "每页文章数（分类）",
             "value": 5,
             "type": "number"
         },

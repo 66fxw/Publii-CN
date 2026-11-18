@@ -266,6 +266,86 @@ class TemplateHelper {
         fs.writeFileSync(filePath, content, 'utf8');
     }
 
+    /* ------------------------------------------------------------------ *
+     * Publii-CN: 分类栏目归档页输出（独立于标签体系）
+     * ------------------------------------------------------------------ */
+
+    saveOutputCategoriesListFile(content) {
+        let usePostsPrefix = this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix;
+        let postsPrefix = this.siteConfig.advanced.urls.postsPrefix;
+        let baseDir = usePostsPrefix ? path.join(this.outputDir, postsPrefix) : this.outputDir;
+        let categoriesPrefix = this.siteConfig.advanced.urls.categoriesPrefix;
+        let filePath = path.join(baseDir, categoriesPrefix, 'index.html');
+        let dirPath = path.join(baseDir, categoriesPrefix);
+        fs.ensureDirSync(dirPath);
+        content = this.compressHTML(content);
+        fs.writeFileSync(filePath, content, 'utf8');
+    }
+
+    saveOutputCategoryFile(categorySlug, content, isCategoryPreview = false) {
+        let usePostsPrefix = this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix;
+        let postsPrefix = this.siteConfig.advanced.urls.postsPrefix;
+        let baseDir = usePostsPrefix ? path.join(this.outputDir, postsPrefix) : this.outputDir;
+        let filePath = path.join(baseDir, categorySlug, 'index.html');
+        let dirPath = path.join(baseDir, categorySlug);
+        let categoriesPath = usePostsPrefix ? baseDir : false;
+        let categoriesPrefix = this.siteConfig.advanced.urls.categoriesPrefix;
+
+        if (isCategoryPreview) {
+            filePath = path.join(this.outputDir, 'preview.html');
+            content = this.compressHTML(content);
+            fs.writeFileSync(filePath, content, 'utf8');
+            return;
+        } else if (categoriesPrefix) {
+            filePath = path.join(baseDir, categoriesPrefix, categorySlug, 'index.html');
+            dirPath = path.join(baseDir, categoriesPrefix, categorySlug);
+            categoriesPath = path.join(baseDir, categoriesPrefix);
+        }
+
+        if (categoriesPath && !Utils.dirExists(categoriesPath)) {
+            fs.ensureDirSync(categoriesPath);
+        }
+
+        content = this.compressHTML(content);
+        fs.ensureDirSync(dirPath);
+        fs.writeFileSync(filePath, content, 'utf8');
+    }
+
+    saveOutputCategoryPaginationFile(categorySlug, pageNumber, content) {
+        let usePostsPrefix = this.siteConfig.advanced.urls.postsPrefix && this.siteConfig.advanced.urls.categoriesPrefixAfterPostsPrefix;
+        let postsPrefix = this.siteConfig.advanced.urls.postsPrefix;
+        let baseDir = usePostsPrefix ? path.join(this.outputDir, postsPrefix) : this.outputDir;
+        let pageName = this.siteConfig.advanced.urls.pageName;
+        let filePath = path.join(baseDir, categorySlug, pageName, pageNumber.toString(), 'index.html');
+        let pageDirPath = path.join(baseDir, categorySlug, pageName);
+        let dirPath = path.join(pageDirPath, pageNumber.toString());
+        let categoriesPath = usePostsPrefix ? baseDir : false;
+        let categoriesPrefix = this.siteConfig.advanced.urls.categoriesPrefix;
+
+        if (categoriesPrefix) {
+            filePath = path.join(baseDir, categoriesPrefix, categorySlug, pageName, pageNumber.toString(), 'index.html');
+            pageDirPath = path.join(baseDir, categoriesPrefix, categorySlug, pageName);
+            dirPath = path.join(pageDirPath, pageNumber.toString());
+            categoriesPath = path.join(baseDir, categoriesPrefix);
+        }
+
+        if (categoriesPath && !Utils.dirExists(categoriesPath)) {
+            fs.ensureDirSync(categoriesPath);
+        }
+
+        content = this.compressHTML(content);
+
+        if (!Utils.dirExists(pageDirPath)) {
+            fs.ensureDirSync(pageDirPath);
+        }
+
+        if (!Utils.dirExists(dirPath)) {
+            fs.ensureDirSync(dirPath);
+        }
+
+        fs.writeFileSync(filePath, content, 'utf8');
+    }
+
     /*
      * Save a compiled Handlebars template under
      * a specified author filename

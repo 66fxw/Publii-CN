@@ -38,6 +38,9 @@ const RendererContextPagePreview = require('./contexts/page-preview.js');
 const RendererContextPostPreview = require('./contexts/post-preview.js');
 const RendererContextTag = require('./contexts/tag.js');
 const RendererContextTags = require('./contexts/tags.js');
+// Publii-CN: 独立分类栏目归档页上下文
+const RendererContextCategory = require('./contexts/category.js');
+const RendererContextCategories = require('./contexts/categories.js');
 const RendererContextAuthor = require('./contexts/author.js');
 const RendererContextHome = require('./contexts/home.js');
 const RendererContextFeed = require('./contexts/feed.js');
@@ -131,6 +134,7 @@ class Renderer {
         this.homepageOnlyMode = mode === 'home';
         this.tagOnlyMode = mode === 'tag';
         this.authorOnlyMode = mode === 'author';
+        this.categoryOnlyMode = mode === 'category'; // Publii-CN
         this.setIO();
         await this.emptyOutputDir();
         let themeValidationResults = this.themeIsValid();
@@ -188,6 +192,8 @@ class Renderer {
                 await this.renderHomepagePreview();
             } else if (this.tagOnlyMode) {
                 await this.renderTagPreview();
+            } else if (this.categoryOnlyMode) {
+                await this.renderCategoryPreview();
             } else if (this.authorOnlyMode) {
                 await this.renderAuthorPreview();
             } else {
@@ -270,6 +276,13 @@ class Renderer {
                 this.generateTagsList();
             }
 
+            // Publii-CN: 独立分类栏目归档页（与标签体系完全解耦）
+            if (RendererHelpers.getRendererOptionValue('createCategoryPages', this.themeConfig)) {
+                this.sendProgress(63, 'Generating category pages');
+                this.generateCategories();
+                this.generateCategoriesList();
+            }
+
             if (RendererHelpers.getRendererOptionValue('createAuthorPages', this.themeConfig)) {
                 this.sendProgress(70, 'Generating author pages');
                 this.generateAuthors();
@@ -325,6 +338,8 @@ class Renderer {
             this.generateFrontpage();
         } else if (type === 'tag') {
             this.generateTags(this.itemID);
+        } else if (type === 'category') {
+            this.generateCategories(this.itemID);
         } else if (type === 'author') {
             this.generateAuthors(this.itemID);
         }
@@ -391,6 +406,33 @@ class Renderer {
             let foundedTags = this.cachedItems.posts[postID].tags.filter(tag => tag.id === this.itemID);
 
             if (foundedTags.length) {
+                postIDsToRender.push(postIDs[i]);
+            }
+        }
+
+        await FilesHelper.copyAssetsFiles(this.themeDir, this.outputDir, this.themeConfig);
+        await FilesHelper.copyDynamicAssetsFiles(this.themeDir, this.outputDir, this.themeConfig);
+        await FilesHelper.copyMediaFiles(this.inputDir, this.outputDir, postIDsToRender, pageIDs);
+        FilesHelper.copyPluginFiles(this.inputDir, this.outputDir, this.pluginsDir);
+
+        this.triggerEvent('afterRender');
+    }
+
+    /**
+     * Publii-CN: Renders category page preview
+     */
+    async renderCategoryPreview () {
+        this.preparePreview('category');
+
+        let postIDs = Object.keys(this.cachedItems.posts);
+        let pageIDs = Object.keys(this.cachedItems.pages);
+        let postIDsToRender = [];
+
+        for (let i = 0; i < postIDs.length; i++) {
+            let postID = postIDs[i];
+            let postCategories = this.cachedItems.posts[postID].categories || [];
+
+            if (postCategories.some(category => category.id === this.itemID)) {
                 postIDsToRender.push(postIDs[i]);
             }
         }
@@ -1601,6 +1643,190 @@ class Renderer {
         }
 
         console.timeEnd('TAGS');
+    }
+
+    /* ------------------------------------------------------------------ *
+     * Publii-CN: 分类栏目归档页生成（独立于标签体系）
+     * ------------------------------------------------------------------ */
+
+    generateCategoriesList() {
+        if (
+            this.siteConfig.advanced.urls.categoriesPrefix === '' ||
+            !this.themeConfig.supportedFeatures ||
+            !this.themeConfig.supportedFeatures.categoriesList ||
+            !RendererHelpers.getRendererOptionValue('createCategoriesList', this.themeConfig)
+        ) {
+            return false;
+        }
+
+        console.time('CATEGORIES-LIST');
+        let inputFile = 'categories.hbs';
+        let compiledTemplate = this.compileTemplate(inputFile);
+
+        if (!compiledTemplate) {
+            return false;
+        }
+
+        let contextGenerator = new RendererContextCategories(this);
+        let context = contextGenerator.getContext();
+        this.menuContext = ['categories'];
+        this.globalContext = this.createGlobalContext('categories', [], false, false, false, context);
+        let output = this.renderTemplate(compiledTemplate, context, this.globalContext, inputFile);
+
+        if (this.plugins.hasModifiers('htmlOutput')) {
+            output = this.plugins.runModifiers('htmlOutput', this, output, [this.globalContext, context]);
+        }
+
+        this.templateHelper.saveOutputCategoriesListFile(output);
+        console.timeEnd('CATEGORIES-LIST');
+    }
+
+    generateCategories(categoryID = false) {
+        if (
+            (this.themeConfig.supportedFeatures && this.themeConfig.supportedFeatures.categoryPages === false) ||
+            RendererHelpers.getRendererOptionValue('createCategoryPages', this.themeConfig) === false
+        ) {
+            return false;
+        }
+
+        console.time('CATEGORIES');
+
+        let inputFile = 'category.hbs';
+        let compiledTemplate = this.compileTemplate(inputFile);
+
+        if (!compiledTemplate) {
+            return false;
+        }
+
+        // Categories live in site config; filter by ID when rendering a single preview
+        let categoriesData = (this.siteConfig.categories || []).slice();
+
+        if (categoryID !== false) {
+            categoriesData = categoriesData.filter(category => category.id === categoryID);
+        }
+
+        categoriesData.sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+        // Count published posts per category from the actual post data.
+        // Categories are linked via additional_data.categories (post.categories),
+        // NOT via category.postIDs, so we must derive counts from posts.
+        let categoryPostCounts = {};
+
+        for (let category of categoriesData) {
+            categoryPostCounts[category.id] = 0;
+        }
+
+        for (let postID of Object.keys(this.cachedItems.posts)) {
+            let post = this.cachedItems.posts[postID];
+            let status = post.status || '';
+
+            if (status.indexOf('published') === -1 || status.indexOf('trashed') > -1 || status.indexOf('is-page') > -1) {
+                continue;
+            }
+
+            for (let postCategory of (post.categories || [])) {
+                if (postCategory && typeof categoryPostCounts[postCategory.id] !== 'undefined') {
+                    categoryPostCounts[postCategory.id]++;
+                }
+            }
+        }
+
+        if (!this.siteConfig.advanced.displayEmptyCategories && categoryID === false) {
+            categoriesData = categoriesData.filter(category => categoryPostCounts[category.id] > 0);
+        }
+
+        let contextGenerator = new RendererContextCategory(this);
+        let postsPerPage = parseInt(this.themeConfig.config.categoriesPostsPerPage, 10);
+
+        if (isNaN(postsPerPage)) {
+            postsPerPage = 5;
+        }
+
+        let addIndexHtml = URLHelper.usesIndexHtml(this);
+        let progressIncrease = categoriesData.length ? (3 / categoriesData.length) : 0;
+
+        for (let i = 0; i < categoriesData.length; i++) {
+            let category = categoriesData[i];
+            let categorySlug = URLHelper.createSlug(category.slug || category.name);
+
+            if (!categorySlug) {
+                continue;
+            }
+
+            let totalNumberOfPosts = categoryPostCounts[category.id] || 0;
+
+            let noPagination = totalNumberOfPosts <= postsPerPage ||
+                               postsPerPage <= 0 ||
+                               this.siteConfig.advanced.categoryNoPagination ||
+                               categoryID !== false;
+
+            if (noPagination) {
+                let context = contextGenerator.getContext(category.id, 0, postsPerPage);
+                this.menuContext = ['category', categorySlug];
+                this.globalContext = this.createGlobalContext('category', [], false, categorySlug, false, context);
+                let output = this.renderTemplate(compiledTemplate, context, this.globalContext, inputFile);
+
+                if (this.plugins.hasModifiers('htmlOutput')) {
+                    output = this.plugins.runModifiers('htmlOutput', this, output, [this.globalContext, context]);
+                }
+
+                this.templateHelper.saveOutputCategoryFile(categorySlug, output, categoryID !== false);
+            } else {
+                let effectivePostsPerPage = postsPerPage === -1 ? 999 : postsPerPage;
+
+                for (let offset = 0; offset < totalNumberOfPosts; offset += effectivePostsPerPage) {
+                    let context = contextGenerator.getContext(category.id, offset, effectivePostsPerPage);
+
+                    let currentPage = parseInt(offset / effectivePostsPerPage, 10) + 1;
+                    let totalPages = Math.ceil(totalNumberOfPosts / effectivePostsPerPage);
+                    let nextPage = currentPage < totalPages ? currentPage + 1 : false;
+                    let previousPage = currentPage > 1 ? currentPage - 1 : false;
+
+                    let pagination = {
+                        context: 'category',
+                        pages: totalPages,
+                        totalPosts: totalNumberOfPosts,
+                        totalPages: totalPages,
+                        currentPage: currentPage,
+                        postsPerPage: effectivePostsPerPage,
+                        nextPage: nextPage,
+                        previousPage: previousPage,
+                        nextPageUrl: URLHelper.createPaginationPermalink(this.siteConfig, this.themeConfig, nextPage, 'category', categorySlug, addIndexHtml),
+                        previousPageUrl: URLHelper.createPaginationPermalink(this.siteConfig, this.themeConfig, previousPage, 'category', categorySlug, addIndexHtml)
+                    };
+
+                    let additionalContexts = offset > 0 ? ['pagination', 'category-pagination'] : [];
+                    let isFirstPage = currentPage === 1;
+                    let isLastPage = currentPage === totalPages;
+
+                    this.menuContext = ['category', categorySlug];
+                    this.globalContext = this.createGlobalContext(
+                        'category',
+                        additionalContexts,
+                        { pagination: pagination, isFirstPage: isFirstPage, isLastPage: isLastPage, currentPage: currentPage },
+                        categorySlug,
+                        false,
+                        context
+                    );
+
+                    let output = this.renderTemplate(compiledTemplate, context, this.globalContext, inputFile);
+
+                    if (this.plugins.hasModifiers('htmlOutput')) {
+                        output = this.plugins.runModifiers('htmlOutput', this, output, [this.globalContext, context]);
+                    }
+
+                    if (offset === 0) {
+                        this.templateHelper.saveOutputCategoryFile(categorySlug, output, false);
+                    } else if (categoryID === false) {
+                        this.templateHelper.saveOutputCategoryPaginationFile(categorySlug, currentPage, output);
+                    }
+                }
+            }
+
+            this.sendProgress(Math.ceil(63 + (progressIncrease * i)), 'Generating category pages (' + (i + 1) + '/' + categoriesData.length + ')');
+        }
+
+        console.timeEnd('CATEGORIES');
     }
 
     /*
