@@ -159,7 +159,20 @@ class RendererContext {
                 }
             }
 
-            if (items[i].isHidden) {
+            // Publii-CN: 分类菜单项 link 存的是分类 ID（字符串），这里转成 slug 供 URL 生成
+            if (items[i] && items[i].type === 'category') {
+                let categories = Array.isArray(this.siteConfig.categories) ? this.siteConfig.categories : [];
+                let foundedCategory = categories.filter(category => category.id == items[i].link);
+
+                if (foundedCategory.length) {
+                    let category = foundedCategory[0];
+                    items[i].link = URLHelper.createSlug(category.slug || category.name);
+                } else {
+                    items[i] = false; // 分类已被删除，丢弃该菜单项
+                }
+            }
+
+            if (items[i] && items[i].isHidden) {
                 items[i] = false;
             }
 

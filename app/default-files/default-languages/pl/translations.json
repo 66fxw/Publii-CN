@@ -703,7 +703,8 @@
             "author": "Użyj nazwy autora",
             "page": "Użyj tytułu strony",
             "post": "Użyj tytułu wpisu",
-            "tag": "Użyj nazwy tagu"
+            "tag": "Użyj nazwy tagu",
+            "category": "Użyj nazwy kategorii"
         },
         "menuItemWithSubitemsRemoveMessage": "Usunąć element menu „{name}” wraz ze wszystkimi elementami podrzędnymi? Treści, do których prowadzą, pozostaną bez zmian. Tej operacji nie można cofnąć.",
         "deleteMenus": "Usuń menu",
@@ -2220,5 +2221,10 @@
     "wpEditor": {
         "noCategoriesYet": "Brak kategorii.",
         "manageCategories": "Zarządzaj kategoriami"
+    },
+    "category": {
+        "categoryLink": "Link do kategorii",
+        "categoryPage": "Strona kategorii",
+        "selectCategoryPage": "Wybierz kategorię"
     }
 }

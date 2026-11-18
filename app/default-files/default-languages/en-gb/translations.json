@@ -703,7 +703,8 @@
             "author": "Use author name",
             "page": "Use page title",
             "post": "Use post title",
-            "tag": "Use tag name"
+            "tag": "Use tag name",
+            "category": "Use category name"
         },
         "menuItemWithSubitemsRemoveMessage": "Delete menu item “{name}” and all its subitems? Linked content will be kept. This cannot be undone.",
         "deleteMenus": "Delete menus",
@@ -2218,5 +2219,10 @@
     "wpEditor": {
         "noCategoriesYet": "No categories yet.",
         "manageCategories": "Manage categories"
+    },
+    "category": {
+        "categoryLink": "Category link",
+        "categoryPage": "Category page",
+        "selectCategoryPage": "Select a category"
     }
 }

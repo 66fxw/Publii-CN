@@ -722,7 +722,8 @@
             "author": "Autorennamen verwenden",
             "page": "Seitentitel verwenden",
             "post": "Beitragstitel verwenden",
-            "tag": "Tag-Namen verwenden"
+            "tag": "Tag-Namen verwenden",
+            "category": "Kategoriename verwenden"
         }
     },
     "menuPositionPopup": {
@@ -2232,5 +2233,10 @@
     "wpEditor": {
         "noCategoriesYet": "Noch keine Kategorien.",
         "manageCategories": "Kategorien verwalten"
+    },
+    "category": {
+        "categoryLink": "Kategorielink",
+        "categoryPage": "Kategorieseite",
+        "selectCategoryPage": "Kategorie auswählen"
     }
 }

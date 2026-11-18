@@ -703,7 +703,8 @@
             "author": "使用作者姓名",
             "page": "使用页面标题",
             "post": "使用文章标题",
-            "tag": "使用标签名称"
+            "tag": "使用标签名称",
+            "category": "使用分类名称"
         },
         "menuItemWithSubitemsRemoveMessage": "删除菜单项「{name}」及其所有子项？链接的内容将被保留。此操作无法撤销。",
         "deleteMenus": "删除菜单",
@@ -2218,5 +2219,10 @@
     "wpEditor": {
         "noCategoriesYet": "暂无分类。",
         "manageCategories": "管理分类"
+    },
+    "category": {
+        "categoryLink": "分类链接",
+        "categoryPage": "分类页面",
+        "selectCategoryPage": "选择分类"
     }
 }

@@ -32,7 +32,7 @@
                     <span>{{ $t('menu.label') }}</span>
 
                     <button
-                        v-if="(type === 'tag' && tagPage) || (type === 'author' && authorPage) || (type === 'post' && postPage) || (type === 'page' && pagePage)"
+                        v-if="(type === 'tag' && tagPage) || (type === 'category' && categoryPage) || (type === 'author' && authorPage) || (type === 'post' && postPage) || (type === 'page' && pagePage)"
                         v-tooltip="{ text: $t('menu.updateLabel.' + type), describe: false }"
                         type="button"
                         class="options-sidebar-icon-button-suggestion"
@@ -112,6 +112,28 @@
                         :show-labels="false"
                         @select="closeDropdown('tagPagesSelect')"
                         :placeholder="$t('tag.selectTagPage')"></v-select>
+                </label>
+
+                <!-- Publii-CN: 分类栏目链接 -->
+                <label
+                    v-if="type === 'category'"
+                    :class="{ 'is-invalid': errors.indexOf('categoryPage') > -1 }"
+                    key="menu-item-editor-field-category">
+                    <span>
+                        {{ $t('category.categoryPage') }}
+                    </span>
+
+                    <v-select
+                        ref="categoryPagesSelect"
+                        :options="categoryPages"
+                        :options-limit="100"
+                        @click.native="cleanError('categoryPage')"
+                        v-model="categoryPage"
+                        :custom-label="customCategoryLabels"
+                        :close-on-select="true"
+                        :show-labels="false"
+                        @select="closeDropdown('categoryPagesSelect')"
+                        :placeholder="$t('category.selectCategoryPage')"></v-select>
                 </label>
 
                 <label
@@ -266,6 +288,7 @@ export default {
             internalLink: '',
             externalLink: '',
             tagPage: '',
+            categoryPage: '',
             authorPage: '',
             postPage: '',
             pagePage: '',
@@ -278,6 +301,7 @@ export default {
                 'post',
                 'page',
                 'tag',
+                'category',
                 'tags',
                 'author',
                 'frontpage',
@@ -289,6 +313,11 @@ export default {
         },
         tagPages () {
             return this.$store.state.currentSite.tags.filter(tag => tag.additionalData.indexOf('"isHidden":true') === -1).map(tag => tag.id);
+        },
+        // Publii-CN: 分类栏目（存字符串 ID）
+        categoryPages () {
+            const config = this.$store.state.currentSite.config || {};
+            return Array.isArray(config.categories) ? config.categories.map(category => category.id) : [];
         },
         linkTargets () {
             return [ '_self', '_blank' ];
@@ -339,6 +368,17 @@ export default {
 
             return map;
         },
+        // Publii-CN: 分类 ID -> 名称
+        categoryNamesById () {
+            let map = new Map();
+            const config = this.$store.state.currentSite.config || {};
+
+            for (let category of (Array.isArray(config.categories) ? config.categories : [])) {
+                map.set(category.id, category.name);
+            }
+
+            return map;
+        },
         authorNamesByUsername () {
             let map = new Map();
 
@@ -381,6 +421,7 @@ export default {
                 case 'post': return this.$t('post.postLink');
                 case 'page': return this.$t('page.pageLink');
                 case 'tag': return this.$t('tag.tagLink');
+                case 'category': return this.$t('category.categoryLink');
                 case 'tags': return this.$t('tag.tagsListLink');
                 case 'author': return this.$t('author.authorLink');
                 case 'frontpage': return this.$t('ui.frontpageLink');
@@ -392,6 +433,9 @@ export default {
         },
         customTagLabels (value) {
             return this.tagNamesById.get(value);
+        },
+        customCategoryLabels (value) {
+            return this.categoryNamesById.get(value);
         },
         customAuthorsLabels (value) {
             return this.authorNamesByUsername.get(value);
@@ -425,6 +469,7 @@ export default {
             this.internalLink = '';
             this.externalLink = '';
             this.tagPage = '';
+            this.categoryPage = '';
             this.authorPage = '';
             this.pagePage = '';
             this.postPage = '';
@@ -455,6 +500,10 @@ export default {
 
             if(this.type === 'tag' && !(!!this.tagPage)) {
                 this.errors.push('tagPage');
+            }
+
+            if(this.type === 'category' && !(!!this.categoryPage)) {
+                this.errors.push('categoryPage');
             }
 
             if(this.type === 'author' && !(!!this.authorPage)) {
@@ -552,6 +601,7 @@ export default {
                 case 'page':      return parseInt(this.pagePage, 10);
                 case 'post':      return parseInt(this.postPage, 10);
                 case 'tag':       return parseInt(this.tagPage, 10);
+                case 'category':  return this.categoryPage; // 分类 ID 是字符串，不可 parseInt
                 case 'tags':      return 'empty';
                 case 'author':    return this.authorPage;
                 case 'frontpage': return 'empty';
@@ -565,6 +615,7 @@ export default {
             this.internalLink = this.type === 'internal' ? value : '';
             this.externalLink = this.type === 'external' ? value : '';
             this.tagPage = this.type === 'tag' ? parseInt(value, 10) : '';
+            this.categoryPage = this.type === 'category' ? value : '';
             this.authorPage = this.type === 'author' ? value : '';
             this.pagePage = this.type === 'page' ? parseInt(value, 10) : '';
             this.postPage = this.type === 'post' ? parseInt(value, 10) : '';
@@ -572,6 +623,8 @@ export default {
         setLabel (itemType) {
             if (itemType === 'tag') {
                 this.label = this.customTagLabels(this.tagPage);
+            } else if (itemType === 'category') {
+                this.label = this.customCategoryLabels(this.categoryPage);
             } else if (itemType === 'author') {
                 this.label = this.customAuthorsLabels(this.authorPage);
             } else if (itemType === 'post') {

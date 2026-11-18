@@ -11,6 +11,7 @@ const URLHelper = require('./../../helpers/url');
  * - post
  * - page
  * - tag
+ * - category
  * - frontpage
  * - blogpage
  * - tags

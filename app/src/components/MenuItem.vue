@@ -334,7 +334,7 @@ export default {
     },
     methods: {
         elementExists () {
-            if(this.type !== 'post' && this.type !== 'page' && this.type !== 'tag' && this.type !== 'author') {
+            if(this.type !== 'post' && this.type !== 'page' && this.type !== 'tag' && this.type !== 'category' && this.type !== 'author') {
                 return true;
             }
 
@@ -366,6 +366,13 @@ export default {
                         return false;
                     }
                 }
+            }
+
+            // Publii-CN: 分类栏目
+            if (this.type === 'category') {
+                let config = this.$store.state.currentSite.config || {};
+                let categories = Array.isArray(config.categories) ? config.categories : [];
+                validItems = categories.filter(category => category.id == this.link);
             }
 
             if (this.type === 'author') {
