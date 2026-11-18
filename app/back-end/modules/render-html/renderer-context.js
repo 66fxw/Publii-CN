@@ -350,12 +350,55 @@ class RendererContext {
         let contextItems = [context].concat(additionalContexts);
         contextItems = [...new Set(contextItems)];
 
+        // Publii-CN: 分类数据暴露给主题模板（@config.categories）。
+        // 分类存于站点配置；同时统计每个分类下已发布的文章数。
+        let categories = Array.isArray(this.siteConfig.categories)
+            ? JSON.parse(JSON.stringify(this.siteConfig.categories))
+            : [];
+
+        if (categories.length) {
+            let postsWithCategories = this.db.prepare(`
+                SELECT id, additional_data
+                FROM posts
+                WHERE status LIKE '%published%' AND status NOT LIKE '%trashed%' AND status NOT LIKE '%is-page%'
+            `).all();
+
+            let postCategoriesMap = new Map();
+
+            for (let row of postsWithCategories) {
+                let categoryIDs = [];
+
+                try {
+                    let additionalData = JSON.parse(row.additional_data || '{}');
+                    categoryIDs = Array.isArray(additionalData.categories) ? additionalData.categories : [];
+                } catch (error) {
+                    categoryIDs = [];
+                }
+
+                for (let categoryID of categoryIDs) {
+                    if (!postCategoriesMap.has(categoryID)) {
+                        postCategoriesMap.set(categoryID, []);
+                    }
+
+                    if (this.renderer.cachedItems.posts[row.id]) {
+                        postCategoriesMap.get(categoryID).push(this.renderer.cachedItems.posts[row.id]);
+                    }
+                }
+            }
+
+            for (let category of categories) {
+                category.posts = postCategoriesMap.get(category.id) || [];
+                category.postsCounter = category.posts.length;
+            }
+        }
+
         this.context = {
             context: contextItems,
             config: URLHelper.prepareSettingsImages(this.siteConfig.domain, {
                 basic: ContentHelper.setInternalLinksInObject(this.themeConfig.config, this.renderer),
                 site: ContentHelper.setInternalLinksInObject(this.siteConfig.advanced, this.renderer),
-                custom: ContentHelper.setInternalLinksInObject(this.themeConfig.customConfig, this.renderer)
+                custom: ContentHelper.setInternalLinksInObject(this.themeConfig.customConfig, this.renderer),
+                categories: categories
             }),
             website: {
                 url: fullURL,

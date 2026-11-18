@@ -1,20 +1,17 @@
 {{> head}}
 {{> navbar}}
 <main>
-   <!-- 分类标签导航 -->
-   <nav class="cat-nav" aria-label="分类导航">
-      <div class="wrapper">
-         <span class="cat-nav__label">热门分类</span>
-         <a href="{{@website.tagsUrl}}">全部标签</a>
-         <a href="{{@website.tagsUrl}}">科技</a>
-         <a href="{{@website.tagsUrl}}">财经</a>
-         <a href="{{@website.tagsUrl}}">互联网</a>
-         <a href="{{@website.tagsUrl}}">数码</a>
-         <a href="{{@website.tagsUrl}}">创业</a>
-         <a href="{{@website.tagsUrl}}">深度</a>
-         <a href="{{@website.tagsUrl}}">观点</a>
-      </div>
-   </nav>
+   <!-- 分类导航（Publii-CN：读取后台真实分类，不再用标签冒充） -->
+   {{#if @config.categories}}
+      <nav class="cat-nav" aria-label="分类导航">
+         <div class="wrapper">
+            <span class="cat-nav__label">热门分类</span>
+            {{#each @config.categories}}
+               <span class="cat-nav__item">{{name}}{{#if postsCounter}}<sup>{{postsCounter}}</sup>{{/if}}</span>
+            {{/each}}
+         </div>
+      </nav>
+   {{/if}}
 
    <!-- 首屏 -->
    <div class="hero hero--noimage">
@@ -140,21 +137,16 @@
                   {{/each}}
                </ol>
             </div>
-            <div class="widget">
-               <h3 class="widget__title">标签云</h3>
-               <div class="tag-cloud">
-                  <a href="{{@website.tagsUrl}}">科技</a>
-                  <a href="{{@website.tagsUrl}}">互联网</a>
-                  <a href="{{@website.tagsUrl}}">财经</a>
-                  <a href="{{@website.tagsUrl}}">数码</a>
-                  <a href="{{@website.tagsUrl}}">创业</a>
-                  <a href="{{@website.tagsUrl}}">人工智能</a>
-                  <a href="{{@website.tagsUrl}}">深度</a>
-                  <a href="{{@website.tagsUrl}}">观点</a>
-                  <a href="{{@website.tagsUrl}}">评测</a>
-                  <a href="{{@website.tagsUrl}}">教程</a>
+            {{#if @config.categories}}
+               <div class="widget">
+                  <h3 class="widget__title">文章分类</h3>
+                  <div class="tag-cloud">
+                     {{#each @config.categories}}
+                        <span class="cat-nav__item">{{name}}{{#if postsCounter}}<sup>{{postsCounter}}</sup>{{/if}}</span>
+                     {{/each}}
+                  </div>
                </div>
-            </div>
+            {{/if}}
             <div class="widget widget--about">
                <h3 class="widget__title">关于本站</h3>
                <p>聚焦前沿资讯与科技动态，每日为你精选有价值的内容。欢迎订阅与分享。</p>

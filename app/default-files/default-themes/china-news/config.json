@@ -1,6 +1,6 @@
 {
     "name": "China News",
-    "version": "1.0.0.0",
+    "version": "1.1.0.0",
     "author": "Publii-CN",
     "menus": {
         "mainMenu": {
@@ -2215,6 +2215,22 @@
         {
             "name": "displayTags",
             "label": "显示标签",
+            "value": 1,
+            "type": "select",
+            "options": [
+                {
+                    "label": "开启",
+                    "value": 1
+                },
+                {
+                    "label": "关闭",
+                    "value": 0
+                }
+            ]
+        },
+        {
+            "name": "displayCategories",
+            "label": "显示分类",
             "value": 1,
             "type": "select",
             "options": [

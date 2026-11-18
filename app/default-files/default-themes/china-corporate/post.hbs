@@ -84,6 +84,17 @@
                      {{/if}}
                   {{/if}}
 
+                  {{#if @config.post.displayCategories}}
+                     {{#if categories}}
+                        <div class="content__categories">
+                           <span class="content__categories-label">分类：</span>
+                           {{#each categories}}
+                              <span class="content__category">{{name}}</span>
+                           {{/each}}
+                        </div>
+                     {{/if}}
+                  {{/if}}
+
                   {{#checkIfAny @config.post.displayTags @config.post.displayShareButtons}}
                      <div class="content__actions">
                         {{#if @config.post.displayTags}}

@@ -144,6 +144,21 @@ class PostItem {
             this.postData.mainTag = false;
         }
 
+        // Publii-CN: 把文章关联的分类映射为完整对象，供主题模板展示
+        this.postData.categories = [];
+
+        if (Array.isArray(this.metaData.categories) && Array.isArray(this.siteConfig.categories)) {
+            for (let categoryID of this.metaData.categories) {
+                let category = this.siteConfig.categories.find(item => item.id === categoryID);
+
+                if (!category) {
+                    continue;
+                }
+
+                this.postData.categories.push(JSON.parse(JSON.stringify(category)));
+            }
+        }
+
         if (this.renderer.plugins.hasModifiers('postTitle')) {
             this.postData.title = this.renderer.plugins.runModifiers('postTitle', this.renderer, this.postData.title, { postData: this.postData }); 
         }
