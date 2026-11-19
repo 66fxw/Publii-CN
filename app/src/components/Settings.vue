@@ -673,6 +673,151 @@
                             </small>
                         </field>
 
+                        <!-- Publii-CN: 分类栏目 SEO 设置 -->
+                        <separator
+                            type="medium"
+                            :label="$t('wpCategorySeo.sectionLabel')" />
+
+                        <div
+                            v-if="!currentThemeSupportsCategoriesList"
+                            class="msg msg-icon msg-alert">
+                            <icon name="warning" customWidth="28" customHeight="28" />
+                            <p>{{ $t('wpCategorySeo.themeNoCategoriesList') }}</p>
+                        </div>
+
+                        <div
+                            v-if="!currentThemeSupportsCategoryPages"
+                            class="msg msg-icon msg-alert">
+                            <icon name="warning" customWidth="28" customHeight="28" />
+                            <p>{{ $t('wpCategorySeo.themeNoCategoryPages') }}</p>
+                        </div>
+
+                        <field
+                            v-if="!advanced.noIndexThisPage && currentThemeSupportsCategoriesList"
+                            id="categories-list-meta-title"
+                            :withCharCounter="true"
+                            :label="$t('settings.pageTitle')">
+                            <text-input
+                                id="categories-list-meta-title"
+                                v-model="advanced.categoriesMetaTitle"
+                                slot="field"
+                                :spellcheck="$store.state.currentSite.config.spellchecking"
+                                :charCounter="true"
+                                :preferredCount="70" />
+                            <small
+                                slot="note"
+                                class="note">
+                                {{ $t('wpCategorySeo.categoriesListVars') }}
+                            </small>
+                        </field>
+
+                        <field
+                            v-if="!advanced.noIndexThisPage && currentThemeSupportsCategoriesList"
+                            id="categories-list-meta-description"
+                            :label="$t('settings.metaDescription')">
+                            <text-area
+                                id="categories-list-meta-description"
+                                v-model="advanced.categoriesMetaDescription"
+                                slot="field"
+                                :charCounter="true"
+                                :spellcheck="$store.state.currentSite.config.spellchecking"
+                                :preferredCount="160" />
+                            <small
+                                slot="note"
+                                class="note">
+                                {{ $t('wpCategorySeo.categoriesListVars') }}
+                            </small>
+                        </field>
+
+                        <field
+                            v-if="!advanced.noIndexThisPage && currentThemeSupportsCategoriesList"
+                            id="meta-robots-categories-list"
+                            :label="$t('settings.metaRobots')">
+                            <dropdown
+                                id="meta-robots-categories-list"
+                                slot="field"
+                                :items="seoOptions"
+                                v-model="advanced.metaRobotsCategoriesList" />
+                        </field>
+
+                        <field
+                            v-if="!advanced.noIndexThisPage && currentThemeSupportsCategoryPages"
+                            id="category-meta-title"
+                            :withCharCounter="true"
+                            :label="$t('settings.pageTitle')">
+                            <text-input
+                                id="category-meta-title"
+                                v-model="advanced.categoryMetaTitle"
+                                slot="field"
+                                :spellcheck="$store.state.currentSite.config.spellchecking"
+                                :charCounter="true"
+                                :preferredCount="70" />
+                            <small
+                                slot="note"
+                                class="note">
+                                {{ $t('wpCategorySeo.categoryPageVars') }}
+                            </small>
+                        </field>
+
+                        <field
+                            v-if="!advanced.noIndexThisPage && currentThemeSupportsCategoryPages"
+                            id="category-meta-description"
+                            :label="$t('settings.metaDescription')">
+                            <text-area
+                                id="category-meta-description"
+                                v-model="advanced.categoryMetaDescription"
+                                slot="field"
+                                :charCounter="true"
+                                :spellcheck="$store.state.currentSite.config.spellchecking"
+                                :preferredCount="160" />
+                            <small
+                                slot="note"
+                                class="note">
+                                {{ $t('wpCategorySeo.categoryPageVars') }}
+                            </small>
+                        </field>
+
+                        <field
+                            v-if="!advanced.noIndexThisPage && currentThemeSupportsCategoryPages"
+                            id="meta-robots-categories"
+                            :label="$t('settings.metaRobots')">
+                            <dropdown
+                                id="meta-robots-categories"
+                                slot="field"
+                                :items="seoOptions"
+                                v-model="advanced.metaRobotsCategories" />
+                        </field>
+
+                        <field
+                            v-if="currentThemeSupportsCategoryPages"
+                            id="display-empty-categories"
+                            :label="$t('wpCategorySeo.displayEmptyCategories')">
+                            <switcher
+                                slot="field"
+                                id="display-empty-categories"
+                                v-model="advanced.displayEmptyCategories" />
+                            <small
+                                slot="note"
+                                class="note">
+                                {{ $t('wpCategorySeo.displayEmptyCategoriesInfo') }}
+                            </small>
+                        </field>
+
+                        <field
+                            v-if="currentThemeSupportsCategoryPages"
+                            id="category-no-pagination"
+                            :label="$t('wpCategorySeo.disableCategoriesPagination')">
+                            <switcher
+                                slot="field"
+                                id="category-no-pagination"
+                                v-model="advanced.categoryNoPagination" />
+                            <small
+                                slot="note"
+                                class="note">
+                                {{ $t('wpCategorySeo.disableCategoriesPaginationInfo') }}
+                            </small>
+                        </field>
+
                         <separator
                             type="medium"
                             :label="$t('settings.authorPage')" />
@@ -2539,6 +2684,16 @@ export default {
                 this.$store.state.currentSite.themeSettings.renderer &&
                 this.$store.state.currentSite.themeSettings.renderer.createTagPages
             );
+        },
+        currentThemeSupportsCategoriesList () {
+            let features = this.$store.state.currentSite.themeSettings.supportedFeatures;
+            let renderer = this.$store.state.currentSite.themeSettings.renderer;
+            return !!(features && features.categoriesList) || !!(renderer && renderer.createCategoriesList);
+        },
+        currentThemeSupportsCategoryPages () {
+            let features = this.$store.state.currentSite.themeSettings.supportedFeatures;
+            let renderer = this.$store.state.currentSite.themeSettings.renderer;
+            return !!(features && features.categoryPages) || !!(renderer && renderer.createCategoryPages);
         },
         currentThemeSupportsAuthorPages () {
             return (

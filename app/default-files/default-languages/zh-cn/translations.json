@@ -2224,5 +2224,16 @@
         "categoryLink": "分类链接",
         "categoryPage": "分类页面",
         "selectCategoryPage": "选择分类"
+    },
+    "wpCategorySeo": {
+        "sectionLabel": "分类栏目 SEO 设置",
+        "themeNoCategoriesList": "你的主题不支持分类列表页。",
+        "themeNoCategoryPages": "你的主题不支持分类归档页。",
+        "categoriesListVars": "可以使用以下变量：%sitename。",
+        "categoryPageVars": "可以使用以下变量：%categoryname、%sitename。",
+        "displayEmptyCategories": "显示无文章的分类",
+        "displayEmptyCategoriesInfo": "启用后，没有文章的分类仍会生成归档页并显示在分类列表中。",
+        "disableCategoriesPagination": "禁用分类分页",
+        "disableCategoriesPaginationInfo": "启用后，某个分类下的所有文章将显示在单一页面中。"
     }
 }

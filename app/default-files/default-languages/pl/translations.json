@@ -2226,5 +2226,16 @@
         "categoryLink": "Link do kategorii",
         "categoryPage": "Strona kategorii",
         "selectCategoryPage": "Wybierz kategorię"
+    },
+    "wpCategorySeo": {
+        "sectionLabel": "Strony kategorii",
+        "themeNoCategoriesList": "Twój motyw nie obsługuje listy kategorii.",
+        "themeNoCategoryPages": "Twój motyw nie obsługuje stron archiwum kategorii.",
+        "categoriesListVars": "Możesz użyć następujących zmiennych: %sitename.",
+        "categoryPageVars": "Możesz użyć następujących zmiennych: %categoryname, %sitename.",
+        "displayEmptyCategories": "Pokaż kategorie bez wpisów",
+        "displayEmptyCategoriesInfo": "Po włączeniu puste kategorie również otrzymują stronę archiwum i pojawiają się na liście.",
+        "disableCategoriesPagination": "Wyłącz paginację kategorii",
+        "disableCategoriesPaginationInfo": "Po włączeniu wszystkie wpisy kategorii są wyświetlane na jednej stronie."
     }
 }

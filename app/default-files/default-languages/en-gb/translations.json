@@ -2224,5 +2224,16 @@
         "categoryLink": "Category link",
         "categoryPage": "Category page",
         "selectCategoryPage": "Select a category"
+    },
+    "wpCategorySeo": {
+        "sectionLabel": "Category pages",
+        "themeNoCategoriesList": "Your theme does not support the categories list page.",
+        "themeNoCategoryPages": "Your theme does not support category archive pages.",
+        "categoriesListVars": "You can use the following variables: %sitename.",
+        "categoryPageVars": "You can use the following variables: %categoryname, %sitename.",
+        "displayEmptyCategories": "Show categories without posts",
+        "displayEmptyCategoriesInfo": "When enabled, categories with no articles still get their archive page and appear in the categories list.",
+        "disableCategoriesPagination": "Disable category pagination",
+        "disableCategoriesPaginationInfo": "When enabled, all articles of a category are shown on a single page."
     }
 }

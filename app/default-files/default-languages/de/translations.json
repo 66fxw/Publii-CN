@@ -2238,5 +2238,16 @@
         "categoryLink": "Kategorielink",
         "categoryPage": "Kategorieseite",
         "selectCategoryPage": "Kategorie auswählen"
+    },
+    "wpCategorySeo": {
+        "sectionLabel": "Kategorieseiten",
+        "themeNoCategoriesList": "Dein Theme unterstützt die Kategorieliste nicht.",
+        "themeNoCategoryPages": "Dein Theme unterstützt keine Kategorie-Archivseiten.",
+        "categoriesListVars": "Folgende Variablen können verwendet werden: %sitename.",
+        "categoryPageVars": "Folgende Variablen können verwendet werden: %categoryname, %sitename.",
+        "displayEmptyCategories": "Kategorien ohne Beiträge anzeigen",
+        "displayEmptyCategoriesInfo": "Wenn aktiviert, erhalten auch leere Kategorien eine Archivseite und erscheinen in der Liste.",
+        "disableCategoriesPagination": "Kategorie-Pagination deaktivieren",
+        "disableCategoriesPaginationInfo": "Wenn aktiviert, werden alle Beiträge einer Kategorie auf einer Seite angezeigt."
     }
 }
