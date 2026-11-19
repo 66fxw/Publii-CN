@@ -671,6 +671,12 @@ let fontParams = {
     }
   };
 
+  // Publii-CN: when a Google/self-hosted font is selected its woff2 usually
+  // contains only Latin glyphs. Append a Chinese font stack so CJK characters
+  // still render in a consistent, high-quality font instead of falling back to
+  // the browser default (often SimSun on Windows).
+  const CN_FONT_FALLBACK = '"PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", "Source Han Sans SC", sans-serif';
+
   let fontBodyName = fontParams[params.fontBody]?.name;
   let fontBodyFamily = fontParams[params.fontBody]?.family;
   let fontBodyWeight = fontParams[params.fontBody]?.weight;
@@ -680,6 +686,14 @@ let fontParams = {
   let fontHeadingsFamily = fontParams[params.fontHeadings]?.family;
   let fontHeadingsWeight = fontParams[params.fontHeadings]?.weight;
   let fontHeadingsHasItalic = fontParams[params.fontHeadings]?.hasItalic;
+
+  if (fontBodyFamily && !fontBodyFamily.toLowerCase().includes('pingfang')) {
+    fontBodyFamily = `${fontBodyFamily}, ${CN_FONT_FALLBACK}`;
+  }
+
+  if (fontHeadingsFamily && !fontHeadingsFamily.toLowerCase().includes('pingfang')) {
+    fontHeadingsFamily = `${fontHeadingsFamily}, ${CN_FONT_FALLBACK}`;
+  }
 
   let output = '';
   let loadedFonts = new Set();

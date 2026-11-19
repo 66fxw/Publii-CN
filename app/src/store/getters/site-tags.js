@@ -7,7 +7,10 @@
  * @returns {array}
  */
 
+import { localeCompare } from '../../helpers/locale-compare.js';
+
 export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC') => {
+    const compare = localeCompare(state.app && state.app.config ? state.app.config.language : '');
     let trashedPostsIDs = new Set();
 
     for (let post of state.currentSite.posts) {
@@ -42,10 +45,10 @@ export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC')
     tags.sort((tagA, tagB) => {
         if (orderBy === 'name') {
             if (order === 'DESC') {
-                return -(tagA.name.localeCompare(tagB.name))
+                return -compare(tagA.name, tagB.name)
             }
 
-            return tagA.name.localeCompare(tagB.name);
+            return compare(tagA.name, tagB.name);
         }
 
         if (order === 'DESC') {

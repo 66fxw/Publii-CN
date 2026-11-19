@@ -1,4 +1,5 @@
 import createPostFilter from '../helpers/post-filter.js';
+import { localeCompare } from '../../helpers/locale-compare.js';
 
 const coreDataCache = new WeakMap();
 
@@ -38,6 +39,8 @@ function getPostCoreData (post) {
  */
 
 export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC') => {
+    const compare = localeCompare(state.app && state.app.config ? state.app.config.language : '');
+
     if (!state.currentSite.posts) {
         return [];
     }
@@ -71,7 +74,7 @@ export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC')
     }
 
     for (let tags of postsTags.values()) {
-        tags.sort((tagA, tagB) => tagA.name.localeCompare(tagB.name));
+        tags.sort((tagA, tagB) => compare(tagA.name, tagB.name));
     }
 
     let postsAuthors = new Map();
@@ -115,18 +118,18 @@ export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC')
     posts.sort((postA, postB) => {
         if (orderBy === 'title') {
             if (order === 'DESC') {
-                return -(postA.title.localeCompare(postB.title))
+                return -compare(postA.title, postB.title)
             }
 
-            return postA.title.localeCompare(postB.title);
+            return compare(postA.title, postB.title);
         }
 
         if (orderBy === 'author') {
             if (order === 'DESC') {
-                return -(postA.author.localeCompare(postB.author))
+                return -compare(postA.author, postB.author)
             }
 
-            return postA.author.localeCompare(postB.author);
+            return compare(postA.author, postB.author);
         }
 
         if (order === 'DESC') {

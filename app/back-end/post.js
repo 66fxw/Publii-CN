@@ -513,6 +513,15 @@ class Post extends Model {
      */
     checkAndPrepareSlug(suffix = 0) {
         let postSlug = this.slug;
+
+        // Publii-CN: a title made only of emoji/punctuation transliterates to an
+        // empty slug. Guarantee a stable, non-empty fallback so URLs/render never
+        // break for such posts.
+        if (!postSlug || !String(postSlug).trim()) {
+            postSlug = 'post-' + (this.id ? this.id : Date.now());
+            this.slug = postSlug;
+        }
+
         let restrictedSlugs = [];
 
         if(this.application.sites[this.site].advanced.urls.cleanUrls) {

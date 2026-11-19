@@ -43,7 +43,9 @@ describe('Slug creation', function() {
     });
 
     it('should support chinese chars', function() {
-        assert.strictEqual('ni-haoshi-jie', slug('你好，世界'));
+        // Chinese punctuation is now converted to separators so adjacent pinyin
+        // words do not merge ("你好，世界" -> ni-hao-shi-jie, not ni-haoshi-jie).
+        assert.strictEqual('ni-hao-shi-jie', slug('你好，世界'));
         assert.strictEqual('ni-zen-mo-jiao-pei', slug('你怎麼交配'));
         assert.strictEqual('ni-zen-mo-jiao-pei-wo-hen-hao', slug('你怎麼交配 我很好！'));
     });

@@ -8,8 +8,10 @@
  */
 
 import Utils from '../../helpers/utils.js';
+import { localeCompare } from '../../helpers/locale-compare.js';
 
 export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC') => {
+    const compare = localeCompare(state.app && state.app.config ? state.app.config.language : '');
     let deletedPostsIDs = state.currentSite.posts.filter(post => post.status.indexOf('trashed') > -1).map(post => post.id);
     
     let authors = state.currentSite.authors.map(author => {
@@ -72,10 +74,10 @@ export default (state, getters) => (filterValue, orderBy = 'id', order = 'DESC')
     authors.sort((authorA, authorB) => {
         if (orderBy === 'name') {
             if (order === 'DESC') {
-                return -(authorA.name.localeCompare(authorB.name))
+                return -compare(authorA.name, authorB.name)
             }
 
-            return authorA.name.localeCompare(authorB.name);
+            return compare(authorA.name, authorB.name);
         }
         
         if (order === 'DESC') {

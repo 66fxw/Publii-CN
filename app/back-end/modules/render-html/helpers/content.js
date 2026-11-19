@@ -223,6 +223,23 @@ class ContentHelper {
         text = text.replace(/<publii-amp>[\s\S]*?<\/publii-amp>/gmi, ''); // Remove conditional content
         text = text.replace(/<(?:.|\s)*?>/g, ''); // Remove HTML tags
         text = text.replace(/\s{2,}/g, ' '); // Shrink multiple spaces into one space
+
+        // Publii-CN: Chinese text usually has no spaces, so the word-based
+        // truncation below treats a whole paragraph as a single "word" and
+        // never truncates it. For CJK content, count characters (code points)
+        // instead so the configured excerpt length is respected.
+        if (/[\u3400-\u9FFF\uF900-\uFAFF\u3040-\u30FF\uAC00-\uD7AF]/.test(text)) {
+            let characters = Array.from(text.trim());
+            let wasTruncated = characters.length > length;
+            let truncated = characters.slice(0, length).join('');
+
+            if (wasTruncated && truncated.trim().substr(-1) !== '.') {
+                truncated += '&hellip;';
+            }
+
+            return truncated === '&hellip;' ? '' : truncated;
+        }
+
         text = text.split(' '); // Create an array of words
         text = text.filter(word => !!word);
         let textLength = text.length;

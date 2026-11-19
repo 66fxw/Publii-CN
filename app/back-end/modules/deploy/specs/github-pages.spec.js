@@ -13,7 +13,8 @@ describe('GitHub Pages deployment', function () {
                 createBlob: 'createBlob',
                 createTree: 'createTree',
                 createCommit: 'createCommit',
-                updateRef: 'updateRef'
+                updateRef: 'updateRef',
+                createRef: 'createRef'
             },
             rateLimit: {
                 get: 'rateLimit'
@@ -69,6 +70,7 @@ describe('GitHub Pages deployment', function () {
             case 'createTree': return { data: { sha: 'new-tree-sha' } };
             case 'createCommit': return { data: { sha: 'new-commit-sha' } };
             case 'updateRef': return { data: {} };
+            case 'createRef': return { data: {} };
         }
     }
 
@@ -488,17 +490,50 @@ describe('GitHub Pages deployment', function () {
     it('reports an error and stops the worker when the repository does not exist', async function () {
         let deployment = createDeployment();
         apiErrors.getRef = httpError(404, 'Not Found');
+        // getRef 404 is treated as a missing branch; a following repository
+        // lookup with 404 confirms the repository itself does not exist.
+        repositoryError = httpError(404, 'Not Found');
 
         await deployment.initConnection();
         runTimers();
 
-        assert.deepEqual(apiCalls, ['getRef']);
+        assert.deepEqual(apiCalls, ['getRef', 'getRepository']);
         let errors = messages.filter(message => message.message === 'app-connection-error');
         assert.equal(errors.length, 1);
         assert.equal(errors[0].value.additionalMessage.indexOf('E1 ') === 0, true);
         assert.equal(errors[0].value.additionalMessage.indexOf('404') > -1, true);
         assert.equal(timeoutReported(), false);
         assert.equal(kills, 1);
+    });
+
+    it('deploys to an empty repository on the first sync by creating the branch ref', async function () {
+        // getRef 404 with an existing repository means a brand-new/empty repo:
+        // the worker must create the commit with no parents and POST the ref.
+        apiErrors.getRef = httpError(404, 'Not Found');
+        // The branch ref is also missing on an empty repo, so the PATCH (updateRef)
+        // fails with 404 and the worker must POST a new ref instead.
+        apiErrors.updateRef = httpError(404, 'Not Found');
+        localTree = [localFile('index.html', 'sha-new')];
+        let deployment = createDeployment();
+        let createdCommits = [];
+        let createCommit = deployment.apiRequest.bind(deployment);
+
+        deployment.apiRequest = async function (requestData, method, extractor, noRetryStatuses) {
+            let name = method(API_METHODS);
+            if (name === 'createCommit') {
+                createdCommits.push(JSON.parse(JSON.stringify(requestData.parents)));
+            }
+            return createCommit(requestData, method, extractor, noRetryStatuses);
+        };
+
+        await deployment.deploy();
+        runTimers();
+
+        assert.deepEqual(apiCalls, ['getRef', 'getRepository', 'createBlob', 'createTree', 'createCommit', 'updateRef', 'createRef']);
+        assert.deepEqual(createdCommits, [[]], 'first commit must have empty parents');
+        let uploaded = messages.filter(message => message.message === 'app-deploy-uploaded');
+        assert.equal(uploaded.length, 1, 'deployment should finish successfully');
+        assert.equal(kills, 1, 'worker should exit cleanly after a successful deployment');
     });
 
     it('reports a timeout and stops the worker when the connection is not established in time', async function () {

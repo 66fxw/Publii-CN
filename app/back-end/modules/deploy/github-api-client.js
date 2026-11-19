@@ -59,6 +59,11 @@ class GithubApiClient {
                     'PATCH',
                     `/repos/${this.encode(owner)}/${this.encode(repo)}/git/refs/${this.encodeRef(ref)}`,
                     force ? { sha, force } : { sha }
+                ),
+                createRef: ({ owner, repo, ref, sha }) => this.request(
+                    'POST',
+                    `/repos/${this.encode(owner)}/${this.encode(repo)}/git/refs`,
+                    { ref, sha }
                 )
             },
             repos: {

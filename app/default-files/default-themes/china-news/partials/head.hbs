@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ @website.language }}">
+<html lang="{{#checkIf @website.language '==' 'zh-cn'}}zh-CN{{else}}{{@website.language}}{{/checkIf}}">
     <head>
         <meta charset="utf-8">
         <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -15,6 +15,7 @@
         {{canonicalLink}}
         {{feedLink}}
         {{socialMetaTags}}
+        {{#checkIf @website.language '==' 'zh-cn'}}<meta property="og:locale" content="zh_CN" />{{else}}{{#checkIf @website.language '==' 'zh-tw'}}<meta property="og:locale" content="zh_TW" />{{/checkIf}}{{/checkIf}}
 		{{#if @config.custom.faviconUpload}}
 	        <link rel="shortcut icon" href="{{@config.custom.faviconUpload}}" type="{{@config.custom.faviconExtension}}" />
         {{/if}}

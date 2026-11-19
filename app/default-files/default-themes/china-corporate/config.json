@@ -1,6 +1,6 @@
 {
     "name": "China Corporate",
-    "version": "1.2.0.0",
+    "version": "1.3.0.0",
     "author": "Publii-CN",
     "menus": {
         "mainMenu": {
@@ -80,7 +80,7 @@
         },
         {
             "name": "excerptLength",
-            "label": "摘要字数",
+            "label": "摘要长度（英文按词数，中文受字体截断影响）",
             "value": 45,
             "type": "number"
         },
@@ -1762,7 +1762,7 @@
             "label": "标题行高 (H1-H6)",
             "group": "字体",
             "note": "The default line-height for heading elements (h1, h2, h3, etc.).",
-            "value": "1.2",
+            "value": "1.35",
             "type": "range",
             "min": 1,
             "max": 3,
@@ -1773,7 +1773,7 @@
             "label": "标题字间距 (H1-H6)",
             "group": "字体",
             "note": "Adjusts the spacing between characters for heading elements (h1, h2, h3, etc.) in EM.",
-            "value": "0",
+            "value": "0.01",
             "type": "range",
             "min": -1,
             "max": 1,

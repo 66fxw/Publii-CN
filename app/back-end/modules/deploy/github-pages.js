@@ -347,10 +347,20 @@ class GithubPages {
 
         try {
             let commitSHA;
+            let treeSHA = null;
+            let remoteTree = [];
             this.uploadedBlobs = {};
             commitSHA = await this.getLatestSHA();
-            let treeSHA = await this.getTreeSHA(commitSHA);
-            let remoteTree = await this.getTreeData(treeSHA);
+
+            if (commitSHA) {
+                treeSHA = await this.getTreeSHA(commitSHA);
+                remoteTree = await this.getTreeData(treeSHA);
+            } else {
+                // First deployment to an empty repository / missing branch:
+                // there is no remote commit or tree to compare against.
+                console.log(`[${ new Date().toUTCString() }] (i) FIRST DEPLOYMENT - NO REMOTE TREE TO COMPARE`);
+            }
+
             let trees = await this.listFolderFiles(remoteTree);
             let finalTree = await this.getNewTreeBasedOnDiffs(trees.remoteTree, trees.localTree);
             let tooBigFiles = this.getTooBigFiles(finalTree);
@@ -467,12 +477,18 @@ class GithubPages {
         }, 1000);
     }
 
-    async apiRequest(requestData, method, extractor) {
+    async apiRequest(requestData, method, extractor, noRetryStatuses = []) {
         try {
             let data = await method(this.client)(requestData);
             let result = extractor ? extractor(data) : data;
             return result;
         } catch (err) {
+            // Some statuses (e.g. 404 for a missing branch on first deploy) are
+            // deterministic - retrying them only wastes a request and delays the sync.
+            if (noRetryStatuses.indexOf(err.status) > -1) {
+                throw err;
+            }
+
             console.log(`[${ new Date().toUTCString() }] (i) TRIED AGAIN: ${method.toString()} - ${requestData.filePath}`);
             
             try {
@@ -494,7 +510,7 @@ class GithubPages {
         );
     }
 
-    getLatestSHA() {
+    async getLatestSHA() {
         process.send({
             type: 'web-contents',
             message: 'app-uploading-progress',
@@ -504,23 +520,56 @@ class GithubPages {
             }
         });
 
-        return this.apiRequest(
-            {
-                owner: this.user,
-                repo: this.repository,
-                ref: this.branch
-            },
-            (api) => api.rest.git.getRef,
-            (result) => {
-                this.waitForTimeout = false;
+        this.firstDeployment = false;
 
-                if(result.data && result.data.object) {
-                    return result.data.object.sha;
+        try {
+            let sha = await this.apiRequest(
+                {
+                    owner: this.user,
+                    repo: this.repository,
+                    ref: this.branch
+                },
+                (api) => api.rest.git.getRef,
+                (result) => {
+                    this.waitForTimeout = false;
+
+                    if(result.data && result.data.object) {
+                        return result.data.object.sha;
+                    }
+
+                    return null;
+                },
+                [404] // a missing branch is expected on the first deployment - do not retry
+            );
+
+            return sha;
+        } catch (err) {
+            // A 404 from getRef means the target branch does not exist yet. This is
+            // the normal case for a brand-new/empty repository: treat it as the
+            // first deployment instead of aborting the sync (see createReference).
+            if (err && err.status === 404) {
+                console.log(`[${ new Date().toUTCString() }] (i) TARGET BRANCH DOES NOT EXIST - PREPARING FIRST DEPLOYMENT`);
+
+                // Make sure the repository itself exists. If it does not, there is
+                // no point continuing - surface a clear error to the user.
+                try {
+                    await this.client.rest.repos.get({
+                        owner: this.user,
+                        repo: this.repository
+                    });
+                } catch (repoErr) {
+                    this.waitForTimeout = false;
+                    throw repoErr;
                 }
 
+                this.firstDeployment = true;
+                this.waitForTimeout = false;
                 return null;
             }
-        );
+
+            this.waitForTimeout = false;
+            throw err;
+        }
     }
 
     getTreeSHA(latestCommitSHA) {
@@ -936,14 +985,16 @@ class GithubPages {
                 repo: this.repository,
                 message: 'Updated from Publii',
                 tree: tree,
-                parents: [parentSHA]
+                // The very first commit of a new branch must have an empty
+                // parents array; passing [null] is rejected by GitHub.
+                parents: parentSHA ? [parentSHA] : []
             },
             (api) => api.rest.git.createCommit,
             (result) => result.data.sha
         );
     }
 
-    createReference(sha) {
+    async createReference(sha) {
         if(sha === '') {
             return false;
         }
@@ -959,15 +1010,38 @@ class GithubPages {
             }
         });
 
-        return this.apiRequest(
-            {
-                owner: this.user,
-                repo: this.repository,
-                sha: sha,
-                ref: this.branch
-            },
-            (api) => api.rest.git.updateRef
-        );
+        try {
+            return await this.apiRequest(
+                {
+                    owner: this.user,
+                    repo: this.repository,
+                    sha: sha,
+                    ref: this.branch
+                },
+                (api) => api.rest.git.updateRef,
+                null,
+                [404] // fall back to createRef immediately when the ref is missing
+            );
+        } catch (err) {
+            // The branch ref does not exist yet (empty repository / first
+            // deployment). GitHub requires a POST to create it - a PATCH can
+            // only update an existing ref.
+            if (err && err.status === 404) {
+                console.log(`[${ new Date().toUTCString() }] (i) REF DOES NOT EXIST - CREATING IT`);
+
+                return await this.apiRequest(
+                    {
+                        owner: this.user,
+                        repo: this.repository,
+                        sha: sha,
+                        ref: this.branch
+                    },
+                    (api) => api.rest.git.createRef
+                );
+            }
+
+            throw err;
+        }
     }
 
     isBinaryFile(fullPath) {

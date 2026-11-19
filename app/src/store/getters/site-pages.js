@@ -1,4 +1,5 @@
 import createPageFilter from '../helpers/page-filter.js';
+import { localeCompare } from '../../helpers/locale-compare.js';
 
 const coreDataCache = new WeakMap();
 
@@ -33,6 +34,8 @@ function getPageCoreData (page) {
  */
 
 export default (state, getters) => (filterValue, orderBy = '', order = 'DESC') => {
+    const compare = localeCompare(state.app && state.app.config ? state.app.config.language : '');
+
     if (!state.currentSite.pages) {
         return [];
     }
@@ -73,18 +76,18 @@ export default (state, getters) => (filterValue, orderBy = '', order = 'DESC') =
     pages.sort((pageA, pageB) => {
         if (orderBy === 'title') {
             if (order === 'DESC') {
-                return -(pageA.title.localeCompare(pageB.title))
+                return -compare(pageA.title, pageB.title)
             }
 
-            return pageA.title.localeCompare(pageB.title);
+            return compare(pageA.title, pageB.title);
         }
 
         if (orderBy === 'author') {
             if (order === 'DESC') {
-                return -(pageA.author.localeCompare(pageB.author))
+                return -compare(pageA.author, pageB.author)
             }
 
-            return pageA.author.localeCompare(pageB.author);
+            return compare(pageA.author, pageB.author);
         }
 
         if (orderBy !== '' && order === 'DESC') {

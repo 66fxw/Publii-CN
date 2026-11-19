@@ -233,12 +233,15 @@ export default {
         goTo (section) {
             this.$router.push('/site/' + this.siteName + '/' + section + '/');
         },
-        slugify (value) {
-            return String(value)
-                .toLowerCase()
-                .trim()
-                .replace(/[^\p{L}\p{N}]+/gu, '-')
-                .replace(/^-+|-+$/g, '') || ('category-' + Date.now());
+        async slugify (value) {
+            if (!value) {
+                return 'category-' + Date.now();
+            }
+
+            // Match the backend slug generator used everywhere else (pinyin for
+            // Chinese) so category URLs stay consistent with the rest of the site.
+            let generated = await mainProcessAPI.invoke('app-main-process-create-slug', value);
+            return generated || ('category-' + Date.now());
         },
         persistCategories (categories, successMessageKey) {
             if (this.saving) {
@@ -282,7 +285,7 @@ export default {
                 }
             });
         },
-        addCategory () {
+        async addCategory () {
             if (!this.newCategoryName || this.saving) {
                 return;
             }
@@ -292,7 +295,7 @@ export default {
             categories.push({
                 id: id,
                 name: this.newCategoryName,
-                slug: this.slugify(this.newCategoryName),
+                slug: await this.slugify(this.newCategoryName),
                 postIDs: []
             });
 
@@ -303,17 +306,18 @@ export default {
             this.editingCategoryId = category.id;
             this.editingCategoryName = category.name;
         },
-        saveCategory () {
+        async saveCategory () {
             if (!this.editingCategoryName || this.saving) {
                 return;
             }
 
+            const newSlug = await this.slugify(this.editingCategoryName);
             const categories = this.categories.map((category) => {
                 if (category.id === this.editingCategoryId) {
                     return {
                         ...category,
                         name: this.editingCategoryName,
-                        slug: this.slugify(this.editingCategoryName)
+                        slug: newSlug
                     };
                 }
                 return category;

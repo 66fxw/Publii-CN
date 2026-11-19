@@ -47,6 +47,11 @@ slug.defaults.charmap['ß'] = 'ss';
 slug.defaults.charmap['ẞ'] = 'SS';
 
 function createSlug(textToSlugify, filenameMode = false, saveLowerChars = false) {
+    // Publii-CN: replace Chinese punctuation with spaces before transliteration.
+    // Otherwise transliteration strips them and adjacent pinyin words merge
+    // (e.g. "你好，世界" became "ni-haoshi-jie" instead of "ni-hao-shi-jie").
+    textToSlugify = String(textToSlugify).replace(/[，。！？；：、（）《》「」『』【】—…·]/g, ' ');
+
     textToSlugify = transliterate(textToSlugify, { replace: [
         ['ä', 'ae'], 
         ['Ä', 'AE'], 

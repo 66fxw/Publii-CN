@@ -174,10 +174,15 @@ export default {
                 }
             }).length;
         },
-        slugify (value) {
-            return String(value).toLowerCase().trim()
-                .replace(/[^\p{L}\p{N}]+/gu, '-')
-                .replace(/^-+|-+$/g, '') || ('category-' + Date.now());
+        async slugify (value) {
+            if (!value) {
+                return 'category-' + Date.now();
+            }
+
+            // Use the same backend slug generator as posts/tags/authors so
+            // Chinese category names become pinyin, keeping URLs consistent.
+            let generated = await mainProcessAPI.invoke('app-main-process-create-slug', value);
+            return generated || ('category-' + Date.now());
         },
         addCategory () {
             this.editingId = null;
@@ -193,14 +198,16 @@ export default {
             this.editorVisible = true;
             this.$nextTick(() => this.$refs.nameInput && this.$refs.nameInput.focus());
         },
-        saveCategory () {
+        async saveCategory () {
             if (!this.editorName || this.saving) {
                 return;
             }
 
             let categories = this.categories.slice();
             const oldSlug = this.editingId ? (categories.find(c => c.id === this.editingId) || {}).slug : null;
-            const slug = this.editorSlug || this.slugify(this.editorName);
+            // Always normalize via the backend slug generator (pinyin for Chinese),
+            // whether the user typed a name or an explicit (possibly Chinese) slug.
+            const slug = await this.slugify(this.editorSlug || this.editorName);
 
             if (this.editingId) {
                 categories = categories.map(category =>

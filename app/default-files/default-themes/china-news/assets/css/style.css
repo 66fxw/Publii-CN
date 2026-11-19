@@ -73,6 +73,9 @@ body {
     line-height: var(--line-height);
     letter-spacing: var(--letter-spacing);
     overflow-x: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-break: strict;
 }
 img { max-width: 100%; height: auto; vertical-align: middle; }
 a { color: var(--link-color); text-decoration: none; transition: color .2s ease; }
@@ -126,7 +129,7 @@ main { display: block; }
 }
 .top .logo {
     color: var(--logo-color) !important; font-family: var(--logo-font);
-    font-size: 1.35rem; font-weight: 800; letter-spacing: -.5px;
+    font-size: 1.35rem; font-weight: 700; letter-spacing: .5px;
     margin-right: auto; white-space: nowrap;
 }
 .top .logo::before {

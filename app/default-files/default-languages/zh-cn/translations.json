@@ -190,20 +190,20 @@
         }
     },
     "date": {
-        "apr": "Apr",
-        "aug": "Aug",
+        "apr": "4月",
+        "aug": "8月",
         "changePagePublicationDate": "更改页面发布日期",
         "changePostPublicationDate": "更改文章发布日期",
-        "dec": "Dec",
-        "feb": "Feb",
-        "jan": "Jan",
-        "jul": "Jul",
-        "jun": "Jun",
-        "mar": "Mar",
-        "may": "May",
-        "nov": "Nov",
-        "oct": "Oct",
-        "sep": "Sep"
+        "dec": "12月",
+        "feb": "2月",
+        "jan": "1月",
+        "jul": "7月",
+        "jun": "6月",
+        "mar": "3月",
+        "may": "5月",
+        "nov": "11月",
+        "oct": "10月",
+        "sep": "9月"
     },
     "contentSelect": {
         "reorder": "重新排序 {name}",

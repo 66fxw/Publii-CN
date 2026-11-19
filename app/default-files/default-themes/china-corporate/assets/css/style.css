@@ -73,6 +73,9 @@ body {
     line-height: var(--line-height);
     letter-spacing: var(--letter-spacing);
     overflow-x: hidden;
+    word-break: break-word;
+    overflow-wrap: break-word;
+    line-break: strict;
 }
 img { max-width: 100%; height: auto; vertical-align: middle; }
 a { color: var(--link-color); text-decoration: none; transition: color .25s ease; }
@@ -407,7 +410,8 @@ figcaption { color: var(--gray); font-size: .85rem; text-align: center; padding-
 .feed__title { margin: 0 0 .5rem; font-size: 1.35rem; }
 .feed__title a { color: var(--headings-color); }
 .feed__title a:hover { color: var(--color); }
-.feed__content p { color: var(--text-color); margin-bottom: .7rem; }
+.feed__content p { color: var(--text-color); margin-bottom: .7rem;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .readmore, .feed__readmore {
     display: inline-block; color: var(--color); font-weight: 600; font-size: .92rem;
     border-bottom: 1px solid transparent;
