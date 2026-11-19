@@ -335,7 +335,7 @@
                                 class="options-sidebar-icon"
                                 size="s"
                                 iconset="svg-map"
-                                name="hierarchy"/>
+                                name="folder"/>
 
                             <span class="options-sidebar-label">{{ $t('wpCategories.title') }}</span>
                         </div>

@@ -286,6 +286,10 @@ export default {
 </script>
 
 <style scoped>
+/* 关键：引入 collection-page 的 flex 布局，否则 .collection 高度塌陷，分类行被裁切不显示 */
+@import "../css/collection-page.css";
+@import "../css/collection-sorting.css";
+
 .categories-intro {
     color: var(--text-light-color, #646970);
     font-size: 1.3rem;

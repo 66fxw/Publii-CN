@@ -54,7 +54,7 @@ export default {
                 url: '/site/' + siteName + '/tags/'
             }, {
                 section: 'categories',
-                icon: 'hierarchy', // Publii-CN: 分类使用独立图标，与标签区分
+                icon: 'folder', // Publii-CN: 分类使用文件夹图标，与标签(tags)明确区分
                 label: this.$t('wpCategories.title'),
                 url: '/site/' + siteName + '/categories/'
             }, {
