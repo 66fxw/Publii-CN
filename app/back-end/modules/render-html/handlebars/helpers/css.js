@@ -39,8 +39,13 @@ const memoizedMD5 = memoize(getMD5);
 function CSSHelper(rendererInstance, Handlebars) {
     Handlebars.registerHelper('css', function (filename) {
         let md5Sum = '';
-        let localPath = path.join(rendererInstance.inputDir, 'themes', rendererInstance.themeConfig.name.toLowerCase(), rendererInstance.themeConfig.files.assetsPath, 'css', filename);
-        let overridedLocalPath = path.join(rendererInstance.inputDir, 'themes', rendererInstance.themeConfig.name.toLowerCase() + '-override', rendererInstance.themeConfig.files.assetsPath, 'css', filename);
+        // Use the theme's real directory name (siteConfig.theme), not the human
+        // readable themeConfig.name. For themes whose name differs from their
+        // folder (e.g. "China News" living in "china-news"), name.toLowerCase()
+        // produces "china news" and the MD5 lookup fails with ENOENT.
+        let themeDirName = rendererInstance.themeName || rendererInstance.themeConfig.name.toLowerCase();
+        let localPath = path.join(rendererInstance.inputDir, 'themes', themeDirName, rendererInstance.themeConfig.files.assetsPath, 'css', filename);
+        let overridedLocalPath = path.join(rendererInstance.inputDir, 'themes', themeDirName + '-override', rendererInstance.themeConfig.files.assetsPath, 'css', filename);
         let versionSuffix = '';
 
         if (rendererInstance.siteConfig.advanced.versionSuffix) {

@@ -39,8 +39,11 @@ const memoizedMD5 = memoize(getMD5);
 function JSHelper(rendererInstance, Handlebars) {
     Handlebars.registerHelper('js', function (filename) {
         let md5Sum = '';
-        let localPath = path.join(rendererInstance.inputDir, 'themes', rendererInstance.themeConfig.name.toLowerCase(), rendererInstance.themeConfig.files.assetsPath, 'js', filename);
-        let overridedLocalPath = path.join(rendererInstance.inputDir, 'themes', rendererInstance.themeConfig.name.toLowerCase() + '-override', rendererInstance.themeConfig.files.assetsPath, 'js', filename);
+        // Use the theme's real directory name (siteConfig.theme), not the human
+        // readable themeConfig.name - see css.js for details.
+        let themeDirName = rendererInstance.themeName || rendererInstance.themeConfig.name.toLowerCase();
+        let localPath = path.join(rendererInstance.inputDir, 'themes', themeDirName, rendererInstance.themeConfig.files.assetsPath, 'js', filename);
+        let overridedLocalPath = path.join(rendererInstance.inputDir, 'themes', themeDirName + '-override', rendererInstance.themeConfig.files.assetsPath, 'js', filename);
 
         let versionSuffix = '';
 
