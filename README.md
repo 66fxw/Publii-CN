@@ -74,9 +74,14 @@
 ## 🚀 快速开始
 
 ### 下载安装
-从本仓库 [Releases](https://github.com/66fxw/Publii-CN/releases) 下载 Windows 安装包（`.exe`），双击安装即可。
+从本仓库 [Releases](https://github.com/66fxw/Publii-CN/releases/latest) 下载 Windows 安装包（`Publii-CN-0.48.3-Setup.exe`，约 139MB），双击安装即可。
+
+- 最新版本：v0.48.3-cn1 —— [直接下载](https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe)
+- [Release 页面](https://github.com/66fxw/Publii-CN/releases/tag/v0.48.3-cn1)
 
 > 当前基于上游 0.48.3。macOS / Linux 版本尚未提供，可自行按下方步骤从源码构建。
+>
+> 📖 **中文介绍文章**：即将发布到闪核网（shanhenews.com），链接稍后补上。参见 [`docs/LANDING-ARTICLE.md`](./docs/LANDING-ARTICLE.md) 的文章底稿。
 
 ### 第一次使用
 1. 启动应用，界面默认为简体中文。
