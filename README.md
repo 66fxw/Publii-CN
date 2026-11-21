@@ -3,7 +3,10 @@
 > 面向简体中文用户的 Publii 二次开发分支 —— 保留静态站点的全部能力，补齐中文使用场景。
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/version-0.48.3-orange.svg)](./package.json)
+[![Version](https://img.shields.io/badge/version-0.48.3--cn1-orange.svg)](https://github.com/66fxw/Publii-CN/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/66fxw/Publii-CN/total.svg?color=brightgreen)](https://github.com/66fxw/Publii-CN/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://github.com/66fxw/Publii-CN/releases/latest)
+[![Stars](https://img.shields.io/github/stars/66fxw/Publii-CN.svg?style=social)](https://github.com/66fxw/Publii-CN/stargazers)
 [![Upstream](https://img.shields.io/badge/upstream-GetPublii%2FPublii-lightgrey.svg)](https://github.com/GetPublii/Publii)
 
 **Publii-CN** 是开源桌面静态站点生成器 [Publii](https://github.com/GetPublii/Publii) 的中文增强分支。它在上游 0.48.3 的基础上，围绕中文内容与国内用户习惯做了本地化和功能增强，并以相同的 **GPLv3** 协议开放源码。
@@ -82,6 +85,26 @@
 > 当前基于上游 0.48.3。macOS / Linux 版本尚未提供，可自行按下方步骤从源码构建。
 >
 > 📖 **中文介绍文章**：[《Publii-CN：免费开源的中文静态站点生成器》](https://www.shanhenews.com/cms/1214.html)（发布于闪核网 shanhenews.com，已按 SEO 规范优化标题与结构）。文章底稿见 [`docs/LANDING-ARTICLE.md`](./docs/LANDING-ARTICLE.md)，Gutenberg 区块版见 [`docs/LANDING-GUTENBERG.html`](./docs/LANDING-GUTENBERG.html)。
+
+#### 发行渠道说明
+
+| 渠道 | 内容 | 适用 |
+|---|---|---|
+| **[Releases](https://github.com/66fxw/Publii-CN/releases)** | Windows 安装包 `Publii-CN-0.48.3-Setup.exe`（约 139MB） | ✅ 终端用户下载安装（推荐） |
+| **源码（本仓库）** | 完整源代码、构建脚本、主题与语言包 | 开发者自行构建 / 二次开发 |
+| **GitHub Packages** | 未启用 | 本项目分发的是桌面可执行程序，非 npm/Docker 等包制品，故不使用 Packages |
+
+> 关于 Packages：GitHub Packages 面向 npm、Docker、Maven 等**代码包/容器镜像**托管；Publii-CN 是桌面应用，通过 Releases 提供免安装的 `.exe` 即可，无需也不适合走 Packages。如果你需要包管理式的分发方式，欢迎在 Issues 中提议。
+
+#### 项目导航
+
+| 文档 | 说明 |
+|---|---|
+| [`docs/USAGE.md`](./docs/USAGE.md) | 面向用户的完整使用文档（安装、分类、主题、SEO、GitHub 部署等 12 章） |
+| [`CN-DEVELOPMENT.md`](./CN-DEVELOPMENT.md) | 开发说明：分支、改动清单、验证与后续建议 |
+| [`docs/LANDING-GUTENBERG.html`](./docs/LANDING-GUTENBERG.html) | WordPress Gutenberg 区块版落地页文章 |
+| [`docs/GUTENBERG-IMPORT.md`](./docs/GUTENBERG-IMPORT.md) | 落地页文章导入 Gutenberg 的方法 |
+| [`DESIGN.md`](./DESIGN.md) / [`UI-DEVELOPMENT.md`](./UI-DEVELOPMENT.md) | 上游 UI 设计与开发规范 |
 
 ### 第一次使用
 1. 启动应用，界面默认为简体中文。
