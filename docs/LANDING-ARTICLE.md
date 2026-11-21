@@ -1,7 +1,7 @@
-# 一篇给中文用户的静态建站工具：把 WordPress 的省心，装进纯静态站点里
+# Publii-CN：免费开源的中文静态站点生成器
 
 > 本文已发布到「闪核网」(shanhenews.com)：<https://www.shanhenews.com/cms/1214.html>
-> 本文件为文章底稿（Markdown 版），可直接复制到 WordPress 文章编辑器使用。Gutenberg 原生区块版见 [`LANDING-GUTENBERG.html`](./LANDING-GUTENBERG.html)，导入说明见 [`GUTENBERG-IMPORT.md`](./GUTENBERG-IMPORT.md)。
+> 本文件为文章底稿（Markdown 版），可直接复制到 WordPress 文章编辑器使用。**发布时请用 Gutenberg 原生区块版 [`LANDING-GUTENBERG.html`](./LANDING-GUTENBERG.html)**（已按 SEO 规范优化：单一结构、标题、目录、内链、FAQ），导入说明见 [`GUTENBERG-IMPORT.md`](./GUTENBERG-IMPORT.md)。
 
 ---
 

@@ -1,328 +1,325 @@
-<!-- wp:group {"style":{"spacing":{"padding":{"top":"2rem","bottom":"2rem"},"blockGap":"1rem"}},"layout":{"type":"constrained"}} -->
-<div class="wp-block-group">
-
-<!-- wp:heading {"level":1,"textAlign":"center","style":{"typography":{"fontSize":"2.4rem","lineHeight":"1.3"}}} -->
-<h1 class="wp-block-heading has-text-align-center" style="font-size:2.4rem;line-height:1.3">给中文用户的静态建站工具：把 WordPress 的省心，装进纯静态站点里</h1>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"1.05rem"}}} -->
-<p class="has-text-align-center" style="font-size:1.05rem">Publii-CN —— 免费、开源、全中文的桌面静态站点生成器。<br>可视化写站，一键生成纯静态文件，直接推送到 GitHub 仓库。</p>
+<!-- wp:paragraph {"style":{"typography":{"fontSize":"1.05rem"}}} -->
+<p style="font-size:1.05rem"><strong>Publii-CN</strong> 是一款免费、开源的简体中文静态站点生成器，基于 Publii 0.48.3 二次开发。它把 WordPress 式的可视化后台装进桌面软件，一键生成纯静态 HTML 文件并推送到 GitHub 仓库，适合博客、企业官网与文档站。本文完整介绍它的功能特色、中文优化、更新记录与下载方式。</p>
 <!-- /wp:paragraph -->
 
 <!-- wp:paragraph {"align":"center"} -->
-<p class="has-text-align-center"><strong>基于上游 Publii 0.48.3 二次开发 · GPLv3 开源 · Windows 安装包约 139MB</strong></p>
-<!-- /wp:paragraph -->
-
-<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center","flexWrap":"wrap"}} -->
-<div class="wp-block-buttons">
-<!-- wp:button {"backgroundColor":"vivid-red","textColor":"white","style":{"border":{"radius":"8px"}},"className":"is-style-fill"} -->
-<div class="wp-block-button is-style-fill"><a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background wp-element-button" href="https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe" target="_blank" rel=" noreferrer noopener" style="border-radius:8px"><strong>⬇️ 下载 Windows 安装包</strong></a></div>
-<!-- /wp:button -->
-
-<!-- wp:button {"textColor":"black","style":{"border":{"radius":"8px"}},"className":"is-style-outline"} -->
-<div class="wp-block-button is-style-outline"><a class="wp-block-button__link has-black-color has-text-color wp-element-button" href="https://github.com/66fxw/Publii-CN" target="_blank" rel=" noreferrer noopener" style="border-radius:8px"><strong>⭐ 前往 GitHub 开源主页</strong></a></div>
-<!-- /wp:button -->
-</div>
-<!-- /wp:buttons -->
-
-<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.9rem"}}} -->
-<p class="has-text-align-center" style="font-size:0.9rem"><a href="https://github.com/66fxw/Publii-CN/blob/main/docs/USAGE.md" target="_blank" rel=" noreferrer noopener">完整使用文档 ↗</a>　·　<a href="https://github.com/66fxw/Publii-CN/releases/tag/v0.48.3-cn1" target="_blank" rel=" noreferrer noopener">版本发布页 ↗</a></p>
-<!-- /wp:paragraph -->
-
-</div>
-<!-- /wp:group -->
-
-<!-- wp:separator -->
-<hr class="wp-block-separator has-alpha-channel-opacity"/>
-<!-- /wp:separator -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">我先把话放这儿：小站真的还需要 WordPress 吗？</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p> WordPress 对新手友好、生态成熟，这点没得黑。但问题也很现实：服务器要维护、数据库要备份、插件要更新，隔三差五还得应付安全漏洞——闪核网之前就报道过好几次 CVE，动不动 CVSS 9.8。</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:paragraph -->
-<p>对于一个不折腾交互、只发内容的小站来说，这些成本纯属白交。</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:paragraph -->
-<p>那换静态站点生成器？Hugo、Hexo、Jekyll 确实快、确实安全，但门槛也真不低：命令行、YAML、Git、主题魔改……不少人卡在第一步就放弃了。</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:paragraph -->
-<p><strong>有没有一种东西，既有 WordPress 那种可视化后台的省心，又能产出纯静态文件？</strong>还真有，今天这篇就帮大家掰扯明白。</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:quote -->
-<blockquote class="wp-block-quote">
-<!-- wp:paragraph -->
-<p>Publii 是一个桌面端 CMS：软件装在你电脑上，可视化写文章、配主题，点一下「生成」就吐出一套纯 HTML 静态文件，往服务器或 GitHub 一丢就完事。没有 PHP、没有数据库，离线也能写。</p>
-<!-- /wp:paragraph -->
-<cite>Publii-CN 是什么</cite></blockquote>
-<!-- /wp:quote -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">项目特色：不只是汉化，是把中文场景从头捋了一遍</h2>
-<!-- /wp:heading -->
-
-<!-- wp:columns -->
-<div class="wp-block-columns">
-<!-- wp:column -->
-<div class="wp-block-column">
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">🇨🇳 全中文界面</h3>
-<!-- /wp:heading -->
-<!-- wp:paragraph -->
-<p>2085 条翻译键与英文包一一对应，打开就是简体中文。老配置自动迁移一次，不覆盖手动选择。</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:column -->
-
-<!-- wp:column -->
-<div class="wp-block-column">
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">📂 独立分类栏目</h3>
-<!-- /wp:heading -->
-<!-- wp:paragraph -->
-<p>官方版只有标签，本分支补上 WordPress 式分类：归档页、分类列表、菜单链接、分类 SEO 一套齐全。</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:column -->
-</div>
-<!-- /wp:columns -->
-
-<!-- wp:columns -->
-<div class="wp-block-columns">
-<!-- wp:column -->
-<div class="wp-block-column">
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">🎨 两款中文主题</h3>
-<!-- /wp:heading -->
-<!-- wp:paragraph -->
-<p>企业官网 <code>china-corporate</code> 与资讯博客 <code>china-news</code>，中文优先字体栈，响应式，开箱能看。</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:column -->
-
-<!-- wp:column -->
-<div class="wp-block-column">
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">🔤 中文排版优化</h3>
-<!-- /wp:heading -->
-<!-- wp:paragraph -->
-<p>拼音排序、中文摘要按字数截断、分类拼音 slug、中文标点不粘连，标题行高与断行也按中文调过。</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:column -->
-</div>
-<!-- /wp:columns -->
-
-<!-- wp:columns -->
-<div class="wp-block-columns">
-<!-- wp:column -->
-<div class="wp-block-column">
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">🚀 GitHub 部署修复</h3>
-<!-- /wp:heading -->
-<!-- wp:paragraph -->
-<p>空仓库首次推送 404 失败？自动创建分支引用。主题名带空格导致渲染崩溃？按真实目录名处理。</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:column -->
-
-<!-- wp:column -->
-<div class="wp-block-column">
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">🎛️ WordPress 风格后台</h3>
-<!-- /wp:heading -->
-<!-- wp:paragraph -->
-<p>内置经典深色侧边栏 + 蓝色主色的 WordPress 风格外观，在「应用设置 → 界面风格」一键切换。</p>
-<!-- /wp:paragraph -->
-</div>
-<!-- /wp:column -->
-</div>
-<!-- /wp:columns -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">两款主题，怎么选？</h2>
-<!-- /wp:heading -->
-
-<!-- wp:table {"hasFixedLayout":true} -->
-<figure class="wp-block-table"><table class="has-fixed-layout"><tbody><tr><th><strong>主题</strong></th><th><strong>定位</strong></th><th><strong>风格</strong></th></tr><tr><td><code>china-corporate</code></td><td>企业官网</td><td>商务深蓝，Hero + 服务卡片 + 关于我们 + 数据展示 + CTA</td></tr><tr><td><code>china-news</code></td><td>资讯 / 博客</td><td>红橙主色，置顶头条 + 高密度图文列表 + 侧边栏热门与标签云</td></tr></tbody></table></figure>
-<!-- /wp:table -->
-
-<!-- wp:paragraph -->
-<p>两款都用了中文优先字体栈，行高、断行、摘要按中文习惯调过，还带 <code>lang="zh-CN"</code> 和 <code>og:locale="zh_CN"</code>，SEO 细节也照顾到了。</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">中文细节，这块最容易被忽略</h2>
-<!-- /wp:heading -->
-
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li>文章、标签、作者、分类、站点名按 <strong>zh-Hans-CN 拼音顺序</strong>排序，不再是乱码一样的码位序。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>中文标题自动生成<strong>拼音网址</strong>（「新闻」→ <code>xin-wen</code>），不会变成一长串中文编码。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>摘要按<strong>字数</strong>截断——官方版按空格分词，中文一整段没空格导致摘要要么全出要么没有，这里修好了。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>「你好，世界」不再粘成 <code>ni-haoshi-jie</code>，正确切成 <code>ni-hao-shi-jie</code>。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>默认字体栈补齐苹方 / 微软雅黑 / 思源黑体；选西文字体时自动附中文 fallback。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:separator -->
-<hr class="wp-block-separator has-alpha-channel-opacity"/>
-<!-- /wp:separator -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">📜 完整更新记录</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph -->
-<p>从 2026-11-17 起步至今，全部改动可追溯。以下按时间倒序（最新在前）：</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">2026-11-21 · 开源文档与发布</h3>
-<!-- /wp:heading -->
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li>按 GPLv3 第 5 条补齐修改声明、开源首页介绍与完整中文使用文档。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>落地页文章底稿完成；GitHub Releases 发布首个安装包 <code>v0.48.3-cn1</code>（约 139MB）。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">2026-11-20 · 渲染稳定性修复</h3>
-<!-- /wp:heading -->
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li>修复主题显示名与目录名不一致（如「China News」对应 <code>china-news</code>）导致的 ENOENT 渲染崩溃，附 2 个回归测试。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">2026-11-19 · 中文兼容、部署与 SEO</h3>
-<!-- /wp:heading -->
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li><strong>简体中文兼容性优化</strong>：拼音排序 helper、默认界面中文字体栈、分类 slug 转拼音、中文标点分隔符、中文摘要按字数截断、12 个月份翻译。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li><strong>GitHub 首次部署修复</strong>：空仓库 / 分支不存在时自动创建 ref、空 parents 提交，41 项部署测试全通过。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li><strong>分类 SEO 设置</strong>：网站设置 SEO 区补齐分类页 / 分类列表页的标题、描述、robots 与分页控制。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>修复分类页列表容器高度塌陷导致的不显示问题；分类与标签改用不同图标。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">2026-11-18 · 分类体系成型</h3>
-<!-- /wp:heading -->
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li><strong>WordPress 式独立分类栏目归档页体系</strong>：分类归档页、分类列表页、URL 与模板全套落地（20 文件、900+ 行）。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>菜单编辑器新增「分类栏目 / 分类列表」链接类型。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>修复分类图标与新增分类后列表不刷新的问题。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:heading {"level":3} -->
-<h3 class="wp-block-heading">2026-11-17 · 项目起步</h3>
-<!-- /wp:heading -->
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li>基于上游 Publii v0.48.3（GetPublii/Publii，GPLv3）建立二次开发分支。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>首批改动：简体中文语言包、WordPress 风格后台外观、右侧快捷设置面板、两款中文主题。</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>打包适配：编辑器 CSS 纳入 WordPress 外观、Windows 下 vendor 复制兼容性；修复默认语言、左侧分类入口与编辑器分类选择；两款主题适配分类功能。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:separator -->
-<hr class="wp-block-separator has-alpha-channel-opacity"/>
-<!-- /wp:separator -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">适合谁用？</h2>
-<!-- /wp:heading -->
-
-<!-- wp:list -->
-<ul class="wp-block-list">
-<!-- wp:list-item --><li>想做博客、作品集、文档站的个人站长；</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>需要企业官网、但不想维护服务器和数据库的中小企业；</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>受够了 WordPress 安全告警、又嫌 Hugo / Hexo 太极客的用户；</li><!-- /wp:list-item -->
-<!-- wp:list-item --><li>想白嫖 GitHub Pages 免费托管，又要中文体验顺滑的人。</li><!-- /wp:list-item -->
-</ul>
-<!-- /wp:list -->
-
-<!-- wp:paragraph -->
-<p>一句话：<strong>想要 CMS 的省心，又想要静态站的安全和速度，还不想被英文和命令行劝退</strong>——这个就是为你准备的。</p>
-<!-- /wp:paragraph -->
-
-<!-- wp:group {"style":{"spacing":{"padding":{"top":"1.5rem","bottom":"1.5rem"}}},"backgroundColor":"pale-ocean-blue","layout":{"type":"constrained"}} -->
-<div class="wp-block-group has-pale-ocean-blue-background-color has-background">
-
-<!-- wp:heading {"level":2,"textAlign":"center"} -->
-<h2 class="wp-block-heading has-text-align-center">🚀 现在就上手</h2>
-<!-- /wp:heading -->
-
-<!-- wp:paragraph {"align":"center"} -->
-<p class="has-text-align-center">下载安装包 → 新建站点 → 选中文主题 → 写内容 → 生成 → 推送 GitHub。全程可视化，十分钟搞定。</p>
+<p class="has-text-align-center"><strong>GPLv3 开源 · 全中文界面 · Windows 安装包约 139MB · 附 GitHub 下载地址</strong></p>
 <!-- /wp:paragraph -->
 
 <!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center","flexWrap":"wrap"}} -->
 <div class="wp-block-buttons">
 <!-- wp:button {"backgroundColor":"vivid-red","textColor":"white","style":{"border":{"radius":"8px"}}} -->
-<div class="wp-block-button"><a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background wp-element-button" href="https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe" target="_blank" rel=" noreferrer noopener" style="border-radius:8px"><strong>⬇️ 下载 Publii-CN 安装包（139MB）</strong></a></div>
+<div class="wp-block-button"><a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background wp-element-button" href="https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe" target="_blank" rel=" noreferrer noopener" style="border-radius:8px"><strong>下载 Windows 安装包</strong></a></div>
 <!-- /wp:button -->
 
-<!-- wp:button {"backgroundColor":"midnight-blue","textColor":"white","style":{"border":{"radius":"8px"}}} -->
-<div class="wp-block-button"><a class="wp-block-button__link has-white-color has-midnight-blue-background-color has-text-color has-background wp-element-button" href="https://github.com/66fxw/Publii-CN" target="_blank" rel=" noreferrer noopener" style="border-radius:8px"><strong>⭐ GitHub 主页（Star / 源码）</strong></a></div>
+<!-- wp:button {"textColor":"black","style":{"border":{"radius":"8px"}},"className":"is-style-outline"} -->
+<div class="wp-block-button is-style-outline"><a class="wp-block-button__link has-black-color has-text-color wp-element-button" href="https://github.com/66fxw/Publii-CN" target="_blank" rel=" noreferrer noopener" style="border-radius:8px"><strong>访问 GitHub 开源主页</strong></a></div>
 <!-- /wp:button -->
 </div>
 <!-- /wp:buttons -->
-
-<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.9rem"}}} -->
-<p class="has-text-align-center" style="font-size:0.9rem"><a href="https://github.com/66fxw/Publii-CN/blob/main/docs/USAGE.md" target="_blank" rel=" noreferrer noopener">📖 使用文档</a>　·　<a href="https://github.com/66fxw/Publii-CN/releases/tag/v0.48.3-cn1" target="_blank" rel=" noreferrer noopener">📦 全部版本</a></p>
-<!-- /wp:paragraph -->
-
-</div>
-<!-- /wp:group -->
-
-<!-- wp:heading {"level":2} -->
-<h2 class="wp-block-heading">常见问题</h2>
-<!-- /wp:heading -->
-
-<!-- wp:details -->
-<details class="wp-block-details"><summary>它是免费的吗？有什么限制？</summary><!-- wp:paragraph --><p>完全免费、GPLv3 开源，源码和安装包都可自由获取、修改与再分发，没有功能或站点数量限制。</p><!-- /wp:paragraph --></details>
-<!-- /wp:details -->
-
-<!-- wp:details -->
-<details class="wp-block-details"><summary>和官方 Publii 是什么关系？</summary><!-- wp:paragraph --><p>本项目是社区二次开发版本，非 Publii 官方发布，基于 GetPublii/Publii（版权归 TidyCustoms，GPLv3）修改，按协议要求保留了修改声明，不使用其商标或背书。</p><!-- /wp:paragraph --></details>
-<!-- /wp:details -->
-
-<!-- wp:details -->
-<details class="wp-block-details"><summary>支持哪些操作系统？</summary><!-- wp:paragraph --><p>目前提供 Windows 安装包（约 139MB）。macOS / Linux 尚未提供预编译版本，可按项目 README 的源码构建步骤自行打包。</p><!-- /wp:paragraph --></details>
-<!-- /wp:details -->
-
-<!-- wp:details -->
-<details class="wp-block-details"><summary>部署到 GitHub 需要注意什么？</summary><!-- wp:paragraph --><p>建议用软件里的 GitHub Pages 协议（走 API，比 Git 协议在复杂网络下更稳）。Token 需勾选 repo 权限；若上传内容含 <code>.github/workflows/</code> 下的文件，还要勾 workflow 权限。空仓库首次部署已支持。</p><!-- /wp:paragraph --></details>
-<!-- /wp:details -->
-
-<!-- wp:details -->
-<details class="wp-block-details"><summary>升级会丢站点数据吗？</summary><!-- wp:paragraph --><p>不会。站点数据独立存放在「文档\Publii\」目录，覆盖安装不会丢失。</p><!-- /wp:paragraph --></details>
-<!-- /wp:details -->
 
 <!-- wp:separator -->
 <hr class="wp-block-separator has-alpha-channel-opacity"/>
 <!-- /wp:separator -->
 
-<!-- wp:quote {"className":"is-style-default"} -->
-<blockquote class="wp-block-quote is-style-default">
+<!-- wp:heading {"level":2} -->
+<h2 class="wp-block-heading">目录</h2>
+<!-- /wp:heading -->
+
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li><a href="#why">为什么选择 Publii-CN</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#features">核心功能特色</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#themes">两款中文主题怎么选</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#chinese">中文优化细节</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#changelog">版本更新记录</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#download">下载与快速开始</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#faq">常见问题</a></li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="#further">延伸阅读</a></li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:separator -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->
+
+<!-- wp:heading {"level":2,"anchor":"why"} -->
+<h2 class="wp-block-heading" id="why">为什么选择 Publii-CN</h2>
+<!-- /wp:heading -->
+
 <!-- wp:paragraph -->
-<p>静态站点这两年并不缺工具，但缺的是「中文用户拿来就能顺手用」的工具。Publii-CN 干的就是这件笨功夫：把汉化做全、把中文排版理顺、把分类和 SEO 补齐，再把几个真实会踩的坑填掉。</p>
+<p>做内容站，绕不开一个取舍：WordPress 好用但要维护服务器和数据库，Hugo、Hexo 这类静态生成器快却要面对命令行和主题魔改。对只想安静写文章的人来说，两端都不太舒服。</p>
 <!-- /wp:paragraph -->
-<cite>写在最后</cite></blockquote>
+
+<!-- wp:paragraph -->
+<p>Publii 是桌面端的静态 CMS：软件装在本地，可视化写文章、配主题，点一下生成就得到一套纯 HTML 文件，上传到服务器或代码仓库即可。没有 PHP、没有数据库，离线也能写，天然规避了数据库注入和大量插件漏洞风险。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:paragraph -->
+<p>Publii-CN 在官方版本之上做了面向中文用户的增强——不止是汉化，而是把分类体系、主题、SEO、排序、摘要等中文场景从头梳理了一遍，并修复了若干真实会踩的坑。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:quote -->
+<blockquote class="wp-block-quote">
+<!-- wp:paragraph -->
+<p>想要 CMS 的可视化省心，又想要静态站点的安全与速度，还不想被英文和命令行劝退——这是 Publii-CN 要解决的问题。</p>
+<!-- /wp:paragraph -->
+</blockquote>
 <!-- /wp:quote -->
+
+<!-- wp:heading {"level":2,"anchor":"features"} -->
+<h2 class="wp-block-heading" id="features">核心功能特色</h2>
+<!-- /wp:heading -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">完整简体中文界面</h3>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>2085 条翻译键与英文包一一对应，打开即是简体中文。新装默认中文，老配置自动迁移一次且不覆盖用户手动选择。</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">独立分类栏目体系</h3>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>官方版只有标签，本分支新增 WordPress 式分类：分类归档页、分类列表页、菜单链接与独立分类 SEO 一应俱全。</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">两款中文主题</h3>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>内置企业官网主题 china-corporate 与资讯博客主题 china-news，中文优先字体栈、响应式布局，切换即可用。</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">中文排版与 SEO 优化</h3>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>拼音排序、中文摘要按字数截断、拼音 slug、og:locale 与 lang="zh-CN"，让中文站点从排版到搜索都更规范。</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:columns -->
+<div class="wp-block-columns">
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">GitHub 首次部署修复</h3>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>空仓库或分支不存在时自动创建引用并提交首个版本，解决了官方流程在新建仓库上推送失败的问题。</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+
+<!-- wp:column -->
+<div class="wp-block-column">
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">WordPress 风格后台</h3>
+<!-- /wp:heading -->
+<!-- wp:paragraph -->
+<p>内置经典深色侧边栏与蓝色主色的 WordPress 风格外观，在应用设置中一键切换，降低上手门槛。</p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:column -->
+</div>
+<!-- /wp:columns -->
+
+<!-- wp:heading {"level":2,"anchor":"themes"} -->
+<h2 class="wp-block-heading" id="themes">两款中文主题怎么选</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>主题决定站点的第一印象。Publii-CN 内置的两款主题分别面向企业与内容创作者，均针对中文排版做过适配。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:table {"hasFixedLayout":true} -->
+<figure class="wp-block-table"><table class="has-fixed-layout"><tbody><tr><th><strong>主题</strong></th><th><strong>适用场景</strong></th><th><strong>布局特点</strong></th></tr><tr><td>china-corporate</td><td>企业官网、产品展示</td><td>商务深蓝配色，Hero 大图、服务卡片、数据展示、CTA 行动区</td></tr><tr><td>china-news</td><td>资讯、博客、个人站</td><td>红橙主色，置顶头条、高密度图文列表、侧边栏热门与标签云</td></tr></tbody></table></figure>
+<!-- /wp:table -->
+
+<!-- wp:paragraph -->
+<p>两款主题都使用中文优先字体栈，标题行高、断行规则、摘要显示按中文习惯调整，并输出规范的 <code>lang="zh-CN"</code> 与 <code>og:locale="zh_CN"</code>，对搜索引擎与社交分享更友好。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":2,"anchor":"chinese"} -->
+<h2 class="wp-block-heading" id="chinese">中文优化细节</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>中文与英文的排版差异很大，这些细节往往是"能用"和"好用"的分界线：</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li><strong>拼音排序</strong>：文章、标签、作者、分类、站点名按 zh-Hans-CN 拼音顺序排列，而不是不可读的 Unicode 码位。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><strong>拼音网址</strong>：中文标题自动生成拼音 slug，例如"新闻"生成 xin-wen，避免冗长的中文编码 URL。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><strong>摘要按字数截断</strong>：官方版按空格分词，中文段落没有空格导致摘要失效；本分支改为按字数截取并补省略号。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><strong>中文标点分隔</strong>："你好，世界"不再错误粘连为 ni-haoshi-jie，而是正确生成 ni-hao-shi-jie。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><strong>中文字体回退</strong>：选择西文字体时自动附加苹方、微软雅黑、思源黑体作为中文回退，避免中文退化成默认宋体。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":2,"anchor":"changelog"} -->
+<h2 class="wp-block-heading" id="changelog">版本更新记录</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>项目自 2026 年 11 月启动，改动全部可追溯。以下按时间倒序（最新在前）：</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2026 年 11 月 21 日：开源文档与发布</h3>
+<!-- /wp:heading -->
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li>按 GPLv3 第 5 条补齐修改声明、开源首页介绍与完整中文使用文档。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>落地页文章完成；GitHub Releases 发布首个安装包 v0.48.3-cn1（约 139MB）。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2026 年 11 月 20 日：渲染稳定性修复</h3>
+<!-- /wp:heading -->
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li>修复主题显示名与目录名不一致（如 China News 对应 china-news）导致的渲染崩溃，并加入回归测试。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2026 年 11 月 19 日：中文兼容、部署与 SEO</h3>
+<!-- /wp:heading -->
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li>中文兼容性优化：拼音排序、中文字体栈、分类拼音 slug、摘要按字数截断、月份本地化。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>GitHub 首次部署修复：空仓库自动创建分支引用，41 项部署测试全部通过。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>分类 SEO 设置：网站设置中补齐分类页与分类列表页的标题、描述、robots 与分页控制。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2026 年 11 月 18 日：分类体系成型</h3>
+<!-- /wp:heading -->
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li>实现 WordPress 式独立分类归档页体系，包含归档页、列表页、URL 与模板。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>菜单编辑器支持分类栏目与分类列表链接类型，并修复分类列表刷新问题。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":3} -->
+<h3 class="wp-block-heading">2026 年 11 月 17 日：项目起步</h3>
+<!-- /wp:heading -->
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li>基于上游 Publii v0.48.3（GPLv3）建立二次开发分支。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>首批加入中文语言包、WordPress 风格后台、右侧快捷面板与两款中文主题。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
+
+<!-- wp:heading {"level":2,"anchor":"download"} -->
+<h2 class="wp-block-heading" id="download">下载与快速开始</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>Publii-CN 完全免费，没有功能或站点数量限制。Windows 用户可直接下载安装包，覆盖安装不会丢失站点数据。</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list {"ordered":true} -->
+<ol class="wp-block-list">
+<!-- wp:list-item --><li>下载安装包并完成安装。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>启动应用，界面默认为简体中文，新建一个站点。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>在网站设置中选择 china-corporate 或 china-news 主题。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>用右侧面板添加分类，撰写文章并生成本地站点。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li>在服务器设置中配置 GitHub Pages，一键上传静态文件。</li><!-- /wp:list-item -->
+</ol>
+<!-- /wp:list -->
+
+<!-- wp:group {"style":{"spacing":{"padding":{"top":"1.5rem","bottom":"1.5rem"}}},"backgroundColor":"pale-ocean-blue","layout":{"type":"constrained"}} -->
+<div class="wp-block-group has-pale-ocean-blue-background-color has-background">
+<!-- wp:paragraph {"align":"center"} -->
+<p class="has-text-align-center"><strong>立即下载 Publii-CN</strong>　Windows 安装包约 139MB，基于 GPLv3 开源。</p>
+<!-- /wp:paragraph -->
+<!-- wp:buttons {"layout":{"type":"flex","justifyContent":"center","flexWrap":"wrap"}} -->
+<div class="wp-block-buttons">
+<!-- wp:button {"backgroundColor":"vivid-red","textColor":"white","style":{"border":{"radius":"8px"}}} -->
+<div class="wp-block-button"><a class="wp-block-button__link has-white-color has-vivid-red-background-color has-text-color has-background wp-element-button" href="https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe" target="_blank" rel=" noreferrer noopener" style="border-radius:8px">下载安装包</a></div>
+<!-- /wp:button -->
+<!-- wp:button {"backgroundColor":"midnight-blue","textColor":"white","style":{"border":{"radius":"8px"}}} -->
+<div class="wp-block-button"><a class="wp-block-button__link has-white-color has-midnight-blue-background-color has-text-color has-background wp-element-button" href="https://github.com/66fxw/Publii-CN" target="_blank" rel=" noreferrer noopener" style="border-radius:8px">GitHub 主页</a></div>
+<!-- /wp:button -->
+</div>
+<!-- /wp:buttons -->
+<!-- wp:paragraph {"align":"center","style":{"typography":{"fontSize":"0.9rem"}}} -->
+<p class="has-text-align-center" style="font-size:0.9rem"><a href="https://github.com/66fxw/Publii-CN/blob/main/docs/USAGE.md" target="_blank" rel=" noreferrer noopener">使用文档</a>　·　<a href="https://github.com/66fxw/Publii-CN/releases/tag/v0.48.3-cn1" target="_blank" rel=" noreferrer noopener">版本发布页</a></p>
+<!-- /wp:paragraph -->
+</div>
+<!-- /wp:group -->
+
+<!-- wp:heading {"level":2,"anchor":"faq"} -->
+<h2 class="wp-block-heading" id="faq">常见问题</h2>
+<!-- /wp:heading -->
+
+<!-- wp:details -->
+<details class="wp-block-details"><summary>Publii-CN 是免费的吗？</summary><!-- wp:paragraph --><p>完全免费，遵循 GPLv3 协议开源，源码与安装包都可自由获取、修改和再分发，没有功能或站点数量限制。</p><!-- /wp:paragraph --></details>
+<!-- /wp:details -->
+
+<!-- wp:details -->
+<details class="wp-block-details"><summary>它和官方 Publii 是什么关系？</summary><!-- wp:paragraph --><p>它是社区二次开发版本，并非官方发布。项目基于 GetPublii/Publii 修改，按 GPLv3 要求保留修改声明，不使用上游商标或背书。</p><!-- /wp:paragraph --></details>
+<!-- /wp:details -->
+
+<!-- wp:details -->
+<details class="wp-block-details"><summary>支持哪些操作系统？</summary><!-- wp:paragraph --><p>目前提供 Windows 安装包；macOS 与 Linux 暂无预编译版本，可按项目 README 的源码构建步骤自行打包。</p><!-- /wp:paragraph --></details>
+<!-- /wp:details -->
+
+<!-- wp:details -->
+<details class="wp-block-details"><summary>部署到 GitHub 需要哪些权限？</summary><!-- wp:paragraph --><p>建议使用 GitHub Pages 协议，Token 需勾选 repo 权限；若上传内容包含 .github/workflows/ 下的文件，还需勾选 workflow 权限。空仓库首次部署已获支持。</p><!-- /wp:paragraph --></details>
+<!-- /wp:details -->
+
+<!-- wp:details -->
+<details class="wp-block-details"><summary>升级会丢失站点数据吗？</summary><!-- wp:paragraph --><p>不会。站点数据独立存放在"文档\Publii\"目录，覆盖安装不会丢失。</p><!-- /wp:paragraph --></details>
+<!-- /wp:details -->
+
+<!-- wp:heading {"level":2,"anchor":"further"} -->
+<h2 class="wp-block-heading" id="further">延伸阅读</h2>
+<!-- /wp:heading -->
+
+<!-- wp:paragraph -->
+<p>如果想进一步了解静态建站与站点推广，可以继续阅读本站的相关教程：</p>
+<!-- /wp:paragraph -->
+
+<!-- wp:list -->
+<ul class="wp-block-list">
+<!-- wp:list-item --><li><a href="https://www.shanhenews.com/cms/476.html">Publii CMS：类似 WordPress 的静态建站程序</a>——了解 Publii 的起源与核心理念。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="https://www.shanhenews.com/tutorial/813.html">Publii 同步网站到 GitHub 仓库失败的解决方法</a>——部署问题的排查参考。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="https://www.shanhenews.com/jianzhan/446.html">将新站提交到 Google Search Console</a>——发布后让搜索引擎收录。</li><!-- /wp:list-item -->
+<!-- wp:list-item --><li><a href="https://www.shanhenews.com/jianzhan/431.html">WordPress 创建 Sitemap 网站地图</a>——理解静态站的站点地图思路。</li><!-- /wp:list-item -->
+</ul>
+<!-- /wp:list -->
 
 <!-- wp:paragraph {"style":{"typography":{"fontSize":"0.85rem"}}} -->
 <p style="font-size:0.85rem">开源协议：GPLv3 · 项目主页：https://github.com/66fxw/Publii-CN · 使用文档：https://github.com/66fxw/Publii-CN/blob/main/docs/USAGE.md</p>
