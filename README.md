@@ -81,7 +81,7 @@
 
 > 当前基于上游 0.48.3。macOS / Linux 版本尚未提供，可自行按下方步骤从源码构建。
 >
-> 📖 **中文介绍文章**：即将发布到闪核网（shanhenews.com），链接稍后补上。参见 [`docs/LANDING-ARTICLE.md`](./docs/LANDING-ARTICLE.md) 的文章底稿。
+> 📖 **中文介绍文章**：[《Publii-CN：给中文用户的免费开源静态建站工具》](https://www.shanhenews.com/cms/1214.html)（发布于闪核网 shanhenews.com）。文章底稿见 [`docs/LANDING-ARTICLE.md`](./docs/LANDING-ARTICLE.md)，Gutenberg 区块版见 [`docs/LANDING-GUTENBERG.html`](./docs/LANDING-GUTENBERG.html)。
 
 ### 第一次使用
 1. 启动应用，界面默认为简体中文。
@@ -156,3 +156,4 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 - 上游官方文档：<https://getpublii.com/docs/>
 - 本项目使用文档：[`docs/USAGE.md`](./docs/USAGE.md)
 - 二次开发说明：[`CN-DEVELOPMENT.md`](./CN-DEVELOPMENT.md)
+- 中文介绍文章（闪核网）：<https://www.shanhenews.com/cms/1214.html>

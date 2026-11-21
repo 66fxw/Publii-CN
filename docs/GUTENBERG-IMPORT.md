@@ -56,7 +56,7 @@
   `https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe`
   如需换版本，改完重新上传安装包后同步替换这里。
 - **GitHub 主页 / 文档链接**：`https://github.com/66fxw/Publii-CN`
-- **文章自身地址**：发布拿到地址后，回填到项目 README 的「中文介绍文章」处（本次另行处理）。
+- **文章自身地址**：本文已通过 REST API 发布到闪核网：<https://www.shanhenews.com/cms/1214.html>，并已回填到项目 README 的「中文介绍文章」处。
 - **颜色**：按钮用 WordPress 默认调色板 slug（`vivid-red`、`midnight-blue`、`pale-ocean-blue`），若主题调色板不同，导入后可在右侧设置面板改颜色。
 - **配图**：如需 Hero 图或主题截图，可在 Group 区块内追加「图像」区块，或设置 Group 的背景图片。
 

@@ -1,7 +1,7 @@
 # 一篇给中文用户的静态建站工具：把 WordPress 的省心，装进纯静态站点里
 
-> 本文为发布在「闪核网」(shanhenews.com) 的落地页文章底稿，可直接复制到 WordPress 文章编辑器使用。
-> 文中链接均已在文末「发布前替换清单」列出，替换后即可发布。
+> 本文已发布到「闪核网」(shanhenews.com)：<https://www.shanhenews.com/cms/1214.html>
+> 本文件为文章底稿（Markdown 版），可直接复制到 WordPress 文章编辑器使用。Gutenberg 原生区块版见 [`LANDING-GUTENBERG.html`](./LANDING-GUTENBERG.html)，导入说明见 [`GUTENBERG-IMPORT.md`](./GUTENBERG-IMPORT.md)。
 
 ---
 
@@ -121,9 +121,9 @@ Publii-CN 补上了一套**独立分类体系**，跟标签互不干扰：
 
 ---
 
-<!-- 发布前替换清单（发布时删除本区块）
-1. 文章发布后的地址填入：下面「相关阅读」或 README 的「中文介绍文章」处。
-2. 如站点启用 CDN/图床，可把文中链接替换为 shanhenews.com 的跳转页。
-3. 建议文章归类：教程 / CMS 栏目；标签：静态站点、Publii、建站教程、开源、GitHub Pages。
+<!-- 发布说明（保留供参考）
+1. 文章已发布：https://www.shanhenews.com/cms/1214.html （Gutenberg 区块版，通过 REST API 发布）
+2. 站点对站外链接自动加 /go?_= 跳转并标记 nofollow，属站点标准处理。
+3. 建议栏目：建站程序 / 教程；标签：Publii、静态站点生成器、建站教程、CMS。
 4. 如需配图，可用主题截图或 GitHub 仓库首页截图。
 -->
