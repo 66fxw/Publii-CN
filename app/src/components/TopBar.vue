@@ -54,10 +54,9 @@ export default {
                 }
 
                 if (data.status === false) {
-                    this.$bus.$emit('alert-display', {
-                        message: this.$t('ui.appIsUnableToGetNotifications') + data.error,
-                        okLabel: this.$t('ui.ok'),
-                    });
+                    // Shanhe CMS: 通知拉取失败（离线/代理/网络受限）不应打断用户，
+                    // 仅在控制台记录，避免启动时弹出吓人的错误对话框。
+                    console.warn('[Shanhe CMS] Unable to retrieve notifications:', data.error);
                 }
 
                 this.$bus.$emit('app-received-notifications');
