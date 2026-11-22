@@ -23,6 +23,18 @@ GNU GPL v3 第 7(e) 条明确允许版权持有人附加"不授予商标权"的�
 - 生成的站点 `generator` meta 标签
 - 两款主题的作者署名
 
+## 应用图标
+
+应用图标（安装包、可执行文件、托盘、DMG 卷标等）已统一替换为**蓝底白字「闪核」**设计：
+
+- `build/installation/icon.ico` — Windows 多尺寸图标（16/32/48/64/128/256）
+- `build/installation/icon.icns`、`volume.icns`、`volume-prerelease.icns` — macOS 图标
+- `build/installation/icons/icon.png`、`build/icon.png` — 1024×1024 PNG
+- `app/back-end/assets/icon.png` — 系统托盘图标
+- `app/src/assets/logo.png`、`images/logo.png` 及各 SVG — 应用内 Logo
+
+图标生成脚本见 [`build/scripts/generate-icons.py`](./build/scripts/generate-icons.py)（需 Pillow 与微软雅黑字体）。
+
 ## 保留的上游引用（合规所需）
 
 以下内容予以保留，属于**事实性来源标注**与 GPL 要求，不构成商标使用：

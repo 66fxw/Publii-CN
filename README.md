@@ -16,6 +16,24 @@
 - 中文排版、拼音排序、中文摘要截断、分类拼音 slug 等中文兼容性优化
 - GitHub Pages 首次部署（空仓库）连通性修复
 
+## 🖼️ 界面预览
+
+应用图标（蓝底白字「闪核」）：
+
+![Shanhe CMS 应用图标](./docs/images/01-splash.jpg)
+
+简体中文主界面（文章管理）：
+
+![Shanhe CMS 主界面](./docs/images/02-main.jpg)
+
+主题设置（含两款中文主题与分类 SEO）：
+
+![Shanhe CMS 主题设置](./docs/images/03-theme.jpg)
+
+关于页（明确标注非官方社区版与上游致谢）：
+
+![Shanhe CMS 关于页](./docs/images/04-about.jpg)
+
 ---
 
 ## ⚠️ 修改声明（GPLv3 第 5 条要求）
