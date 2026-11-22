@@ -29,7 +29,7 @@ class GithubPages {
         this.client = new GithubApiClient({
             baseUrl: `https://${this.serverURL}`,
             timeout: 30000,
-            userAgent: 'Publii'
+            userAgent: 'Shanhe CMS'
         });
         this.token = '';
         this.repository = '';
@@ -66,7 +66,7 @@ class GithubPages {
             auth: this.token,
             baseUrl: `https://${this.serverURL}`,
             timeout: 30000,
-            userAgent: 'Publii'
+            userAgent: 'Shanhe CMS'
         });
 
         process.send({
@@ -243,7 +243,7 @@ class GithubPages {
             auth: token,
             baseUrl: `https://${this.serverURL}`,
             timeout: 30000,
-            userAgent: 'Publii'
+            userAgent: 'Shanhe CMS'
         });
 
         this.apiRequest(
@@ -712,7 +712,7 @@ class GithubPages {
         }
 
         for (let remoteFile of remoteTree) {
-            // Files outside of the configured folder are not managed by Publii
+            // Files outside of the configured folder are not managed by Shanhe CMS
             if (remoteFile.type === 'blob' && this.isInsideFolder(remoteFile.path) && !localPaths.has(remoteFile.path)) {
                 delta.push({
                     path: remoteFile.path,
@@ -983,7 +983,7 @@ class GithubPages {
             {
                 owner: this.user,
                 repo: this.repository,
-                message: 'Updated from Publii',
+                message: 'Updated from Shanhe CMS',
                 tree: tree,
                 // The very first commit of a new branch must have an empty
                 // parents array; passing [null] is rejected by GitHub.

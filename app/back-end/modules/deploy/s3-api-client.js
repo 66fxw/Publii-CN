@@ -87,7 +87,7 @@ class S3ApiClient {
         this.forcePathStyle = options.forcePathStyle === true;
         this.timeout = options.timeout || 60000;
         this.maxAttempts = options.maxAttempts || 3;
-        this.userAgent = options.userAgent || 'Publii';
+        this.userAgent = options.userAgent || 'Shanhe CMS';
         this.httpModules = options.httpModules || {
             'http:': http,
             'https:': https

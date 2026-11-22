@@ -1,15 +1,14 @@
-# Publii-CN
+# Shanhe CMS（闪核 CMS）
 
-> 面向简体中文用户的 Publii 二次开发分支 —— 保留静态站点的全部能力，补齐中文使用场景。
+> 面向简体中文用户的静态站点生成器 —— 基于 Publii 二次开发，保留静态站点的全部能力，补齐中文使用场景。
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/version-0.48.3--cn1-orange.svg)](https://github.com/66fxw/Publii-CN/releases/latest)
 [![Downloads](https://img.shields.io/github/downloads/66fxw/Publii-CN/total.svg?color=brightgreen)](https://github.com/66fxw/Publii-CN/releases)
 [![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg)](https://github.com/66fxw/Publii-CN/releases/latest)
 [![Stars](https://img.shields.io/github/stars/66fxw/Publii-CN.svg?style=social)](https://github.com/66fxw/Publii-CN/stargazers)
-[![Upstream](https://img.shields.io/badge/upstream-GetPublii%2FPublii-lightgrey.svg)](https://github.com/GetPublii/Publii)
 
-**Publii-CN** 是开源桌面静态站点生成器 [Publii](https://github.com/GetPublii/Publii) 的中文增强分支。它在上游 0.48.3 的基础上，围绕中文内容与国内用户习惯做了本地化和功能增强，并以相同的 **GPLv3** 协议开放源码。
+**Shanhe CMS（闪核 CMS）** 是一款面向简体中文用户的桌面静态站点生成器，基于开源项目 [Publii](https://github.com/GetPublii/Publii) 0.48.3 二次开发。它在上游基础上围绕中文内容与国内用户习惯做了本地化和功能增强，并以 **GPLv3** 协议开放源码。
 
 - 完整简体中文界面（2085 条翻译键，与英文包一一对应）
 - WordPress 式独立分类栏目体系（分类归档页 / 分类列表页 / 菜单链接 / SEO 设置）
@@ -28,6 +27,8 @@
 - **许可**：本项目遵循 GNU General Public License v3.0（见 [`LICENSE`](./LICENSE)），源码可自由获取、修改与再分发，但须保留本声明与协议条款。
 
 > 本项目是社区二次开发版本，**非 Publii 官方发布**，与 TidyCustoms / GetPublii 官方无关联，也不使用其商标或背书。上游官方项目请访问 <https://github.com/GetPublii/Publii>。
+>
+> 🏷️ **品牌说明**：因 GPLv3 不授予商标权（第 7(e) 条），本项目已将以产品品牌形式使用的 "Publii" 更名为 **Shanhe CMS（闪核 CMS）**，详见 [`TRADEMARK-NOTICE.md`](./TRADEMARK-NOTICE.md)。
 
 ---
 
@@ -77,24 +78,24 @@
 ## 🚀 快速开始
 
 ### 下载安装
-从本仓库 [Releases](https://github.com/66fxw/Publii-CN/releases/latest) 下载 Windows 安装包（`Publii-CN-0.48.3-Setup.exe`，约 139MB），双击安装即可。
+从本仓库 [Releases](https://github.com/66fxw/Publii-CN/releases/latest) 下载 Windows 安装包（`Shanhe-CMS-0.48.3-x64.exe`，约 139MB），双击安装即可。
 
-- 最新版本：v0.48.3-cn1 —— [直接下载](https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Publii-CN-0.48.3-Setup.exe)
+- 最新版本：v0.48.3-cn1 —— [直接下载](https://github.com/66fxw/Publii-CN/releases/download/v0.48.3-cn1/Shanhe-CMS-0.48.3-x64.exe)
 - [Release 页面](https://github.com/66fxw/Publii-CN/releases/tag/v0.48.3-cn1)
 
 > 当前基于上游 0.48.3。macOS / Linux 版本尚未提供，可自行按下方步骤从源码构建。
 >
-> 📖 **中文介绍文章**：[《Publii-CN：免费开源的中文静态站点生成器》](https://www.shanhenews.com/cms/1214.html)（发布于闪核网 shanhenews.com，已按 SEO 规范优化标题与结构）。文章底稿见 [`docs/LANDING-ARTICLE.md`](./docs/LANDING-ARTICLE.md)，Gutenberg 区块版见 [`docs/LANDING-GUTENBERG.html`](./docs/LANDING-GUTENBERG.html)。
+> 📖 **中文介绍文章**：[《Shanhe CMS：免费开源的中文静态站点生成器》](https://www.shanhenews.com/cms/1214.html)（发布于闪核网 shanhenews.com，已按 SEO 规范优化标题与结构）。文章底稿见 [`docs/LANDING-ARTICLE.md`](./docs/LANDING-ARTICLE.md)，Gutenberg 区块版见 [`docs/LANDING-GUTENBERG.html`](./docs/LANDING-GUTENBERG.html)。
 
 #### 发行渠道说明
 
 | 渠道 | 内容 | 适用 |
 |---|---|---|
-| **[Releases](https://github.com/66fxw/Publii-CN/releases)** | Windows 安装包 `Publii-CN-0.48.3-Setup.exe`（约 139MB） | ✅ 终端用户下载安装（推荐） |
+| **[Releases](https://github.com/66fxw/Publii-CN/releases)** | Windows 安装包 `Shanhe-CMS-0.48.3-x64.exe`（约 139MB） | ✅ 终端用户下载安装（推荐） |
 | **源码（本仓库）** | 完整源代码、构建脚本、主题与语言包 | 开发者自行构建 / 二次开发 |
 | **GitHub Packages** | 未启用 | 本项目分发的是桌面可执行程序，非 npm/Docker 等包制品，故不使用 Packages |
 
-> 关于 Packages：GitHub Packages 面向 npm、Docker、Maven 等**代码包/容器镜像**托管；Publii-CN 是桌面应用，通过 Releases 提供免安装的 `.exe` 即可，无需也不适合走 Packages。如果你需要包管理式的分发方式，欢迎在 Issues 中提议。
+> 关于 Packages：GitHub Packages 面向 npm、Docker、Maven 等**代码包/容器镜像**托管；Shanhe CMS 是桌面应用，通过 Releases 提供免安装的 `.exe` 即可，无需也不适合走 Packages。如果你需要包管理式的分发方式，欢迎在 Issues 中提议。
 
 #### 项目导航
 

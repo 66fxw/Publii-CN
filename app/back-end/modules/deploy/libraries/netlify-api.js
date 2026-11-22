@@ -7,7 +7,7 @@ const asyncReadFile = util.promisify(fs.readFile);
 
 class NetlifyAPI {
     constructor (settings, events = {}) {
-        this.userAgent = 'Publii';
+        this.userAgent = 'Shanhe CMS';
         this.apiUrl = 'https://api.netlify.com/api/v1/';
         this.accessToken = settings.accessToken || '';
         this.siteID = settings.siteID || '';
@@ -78,7 +78,7 @@ class NetlifyAPI {
     async makeApiRequest (method, endpoint, data) {
         let endpointUrl = this.apiUrl + endpoint.replace(':site_id', this.siteID);
         let headers = new Headers({
-            'User-Agent': 'Publii',
+            'User-Agent': 'Shanhe CMS',
             'Authorization': `Bearer ${this.accessToken}`,
             'Content-Type': 'application/json'
         });
@@ -120,7 +120,7 @@ class NetlifyAPI {
         let fullFilePath = this.getFilePath(this.inputDir, filePath, true);
         let fileContent = await asyncReadFile(fullFilePath);
         let headers = new Headers({
-            'User-Agent': 'Publii',
+            'User-Agent': 'Shanhe CMS',
             'Authorization': `Bearer ${this.accessToken}`,
             'Content-Type': 'application/octet-stream',
             'Content-Length': fileContent.length

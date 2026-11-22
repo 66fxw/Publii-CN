@@ -1,17 +1,17 @@
 {
-  "productName": "Publii",
-  "name": "Publii",
+  "productName": "Shanhe CMS",
+  "name": "shanhe-cms",
   "version": "0.48.3",
-  "description": "Static Site CMS",
-  "desktopName": "publii.desktop",
+  "description": "Shanhe CMS - Chinese-enhanced static site generator",
+  "desktopName": "shanhe-cms.desktop",
   "main": "main.js",
   "scripts": {
     "start": "electron main.js"
   },
   "keywords": [],
   "author": {
-    "name": "TidyCustoms",
-    "email": "bob@tidycustoms.net"
+    "name": "66fxw",
+    "url": "https://github.com/66fxw/Publii-CN"
   },
   "license": "GPL-3.0",
   "repository": {

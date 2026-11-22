@@ -1,12 +1,12 @@
 {
-  "productName": "Publii",
-  "name": "Publii",
+  "productName": "Shanhe CMS",
+  "name": "shanhe-cms",
   "version": "0.48.3",
-  "description": "Static Site CMS",
-  "homepage": "https://getpublii.com",
+  "description": "Shanhe CMS - Chinese-enhanced static site generator",
+  "homepage": "https://www.shanhenews.com/cms/1214.html",
   "author": {
-    "name": "TidyCustoms",
-    "email": "bob@tidycustoms.net"
+    "name": "66fxw",
+    "url": "https://github.com/66fxw/Publii-CN"
   },
   "license": "GPL-3.0",
   "main": "app/main.js",
@@ -52,10 +52,10 @@
     "webpack-cli": "5.1.4"
   },
   "build": {
-    "appId": "com.tidycustoms.publii",
+    "appId": "com.shanhe.cms",
     "electronVersion": "43.8.7",
-    "productName": "Publii",
-    "copyright": "Copyright (C) 2016-2026 TidyCustoms. All rights reserved.",
+    "productName": "Shanhe CMS",
+    "copyright": "Copyright (C) 2026 66fxw. Based on Publii (C) 2016-2026 TidyCustoms. GPL-3.0.",
     "asar": true,
     "toolsets": {
       "appimage": "1.0.2"
@@ -94,12 +94,13 @@
       ],
       "category": "Development",
       "description": "Static Site CMS",
-      "executableName": "Publii",
+      "executableName": "shanhe-cms",
       "syncDesktopName": true
     },
     "win": {
       "icon": "build/installation/icon.ico",
-      "target": "nsis"
+      "target": "nsis",
+      "artifactName": "Shanhe-CMS-${version}-${arch}.exe"
     },
     "mac": {
       "category": "public.app-category.utilities",

@@ -86,15 +86,15 @@
                     }">
                         <div class="notification-item-content">
                             <img 
-                                src="./../assets/svg/publii-app-icon-512.svg" 
-                                alt="Publii Logo" 
+                                src="./../assets/svg/shanhe-app-icon.svg" 
+                                alt="Shanhe CMS Logo" 
                                 class="notification-item-icon"
                                 height="52"
                                 width="52" />  
                                 
                             <div class="notification-item-details">
                                <div class="notification-item-name" :data-new-badge="$t('notifications.badgeNew')">
-                                  <span>Publii</span>
+                                  <span>Shanhe CMS</span>
                                 </div>
                                 <div class="notification-item-versions">
                                     <span class="notification-item-version">

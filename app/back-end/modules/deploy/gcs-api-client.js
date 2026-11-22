@@ -56,7 +56,7 @@ class GcsApiClient {
 
         this.timeout = options.timeout || 60000;
         this.maxAttempts = options.maxAttempts || 3;
-        this.userAgent = options.userAgent || 'Publii';
+        this.userAgent = options.userAgent || 'Shanhe CMS';
         this.httpModule = options.httpModule || https;
         this.agent = options.agent === undefined ? new https.Agent({ keepAlive: true, maxSockets: 50 }) : options.agent;
         this.now = options.now || (() => new Date());

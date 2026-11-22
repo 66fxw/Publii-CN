@@ -29,7 +29,7 @@ class GitlabApiClient {
         this.rejectUnauthorized = options.rejectUnauthorized !== false;
         this.timeout = options.timeout || 30000;
         this.uploadTimeout = options.uploadTimeout || 300000;
-        this.userAgent = options.userAgent || 'Publii';
+        this.userAgent = options.userAgent || 'Shanhe CMS';
         this.httpModules = options.httpModules || {
             'http:': http,
             'https:': https

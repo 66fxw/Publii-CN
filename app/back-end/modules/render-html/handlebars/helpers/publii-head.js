@@ -9,7 +9,7 @@ const Handlebars = require('handlebars');
  */
 function publiiHeadHelper(rendererInstance, Handlebars) {
     Handlebars.registerHelper('publiiHead', function (context) {
-        let output  = '<meta name="generator" content="Publii Open-Source CMS for Static Site">';
+        let output  = '<meta name="generator" content="Shanhe CMS - Static Site Generator">';
 
         if (
             rendererInstance.themeConfig.supportedFeatures &&

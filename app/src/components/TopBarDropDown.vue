@@ -72,19 +72,19 @@
                 class="topbar-app-submenu-separator"
                 :label="$t('ui.help')"
                 :title="$t('ui.checkDocumentation')"
-                path="https://getpublii.com/docs/" />
+                path="https://github.com/66fxw/Publii-CN/blob/main/docs/USAGE.md" />
             <topbar-dropdown-item
                 :label="$t('ui.reportIssue')"
                 :title="$t('ui.reportBugInSupportDesk')"
-                path="https://github.com/GetPublii/Publii/discussions" />
+                path="https://github.com/66fxw/Publii-CN/issues" />
             <topbar-dropdown-item
                 :label="$t('ui.githubRepository')"
                 :title="$t('ui.publiiOnGithub')"
-                path="https://github.com/getpublii/publii" />
+                path="https://github.com/66fxw/Publii-CN" />
             <topbar-dropdown-item
                 :label="$t('ui.donate')"
                 :title="$t('ui.supportPublii')"
-                path="https://getpublii.com/donate/" />
+                path="https://www.shanhenews.com/cms/1214.html" />
             <topbar-dropdown-item
                 :label="$t('ui.aboutPublii')"
                 :title="$t('ui.moreInformationOnPublii')"

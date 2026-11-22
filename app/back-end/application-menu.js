@@ -5,7 +5,7 @@ const MENU_STATE_CHANNEL = 'app-menu-state';
 const MAX_RECENT_SITES = 5;
 
 const DEFAULT_LABELS = Object.freeze({
-    about: 'About Publii',
+    about: 'About Shanhe CMS',
     appSettings: 'Settings…',
     authors: 'Authors',
     backups: 'Backups',
@@ -30,9 +30,9 @@ const DEFAULT_LABELS = Object.freeze({
     forceReload: 'Force Reload',
     fullScreen: 'Toggle Full Screen',
     generatePreviewFiles: 'Generate Preview Files',
-    github: 'Publii on GitHub',
+    github: 'Shanhe CMS on GitHub',
     help: '&Help',
-    hide: 'Hide Publii',
+    hide: 'Hide Shanhe CMS',
     hideOthers: 'Hide Others',
     languages: 'Language Manager',
     logViewer: 'Log Viewer',
@@ -48,7 +48,7 @@ const DEFAULT_LABELS = Object.freeze({
     plugins: 'Plugin Manager',
     posts: 'Posts',
     previewChanges: 'Preview Changes',
-    quit: 'Quit Publii',
+    quit: 'Quit Shanhe CMS',
     redo: 'Redo',
     regenerateThumbnails: 'Regenerate Thumbnails',
     releaseNotes: 'Release Notes',
@@ -78,12 +78,12 @@ const DEFAULT_LABELS = Object.freeze({
 });
 
 const EXTERNAL_LINKS = Object.freeze({
-    community: 'https://github.com/GetPublii/Publii/discussions',
+    community: 'https://www.shanhenews.com/cms/1214.html',
     documentation: 'https://getpublii.com/docs/',
     donate: 'https://getpublii.com/donate/',
-    github: 'https://github.com/GetPublii/Publii',
-    releaseNotes: 'https://github.com/GetPublii/Publii/releases',
-    reportIssue: 'https://github.com/GetPublii/Publii/issues'
+    github: 'https://github.com/66fxw/Publii-CN',
+    releaseNotes: 'https://github.com/66fxw/Publii-CN/releases',
+    reportIssue: 'https://github.com/66fxw/Publii-CN/issues'
 });
 
 function sanitizeMenuLabel (value, fallback = 'Site') {
@@ -173,7 +173,7 @@ function buildDockMenuTemplate (options = {}) {
 function buildApplicationMenuTemplate (options = {}) {
     const platform = options.platform || process.platform;
     const isMac = platform === 'darwin';
-    const appName = options.appName || 'Publii';
+    const appName = options.appName || 'Shanhe CMS';
     const translate = options.translate || (key => DEFAULT_LABELS[key] || key);
     const dispatch = options.dispatch || (() => {});
     const openExternal = options.openExternal || (() => {});
@@ -415,7 +415,7 @@ class ApplicationMenuController {
 
     rebuild () {
         const template = buildApplicationMenuTemplate({
-            appName: typeof this.app.getName === 'function' ? this.app.getName() : (this.app.name || 'Publii'),
+            appName: typeof this.app.getName === 'function' ? this.app.getName() : (this.app.name || 'Shanhe CMS'),
             platform: this.platform,
             isDevelopment: this.isDevelopment,
             translate: key => this.translate(key),

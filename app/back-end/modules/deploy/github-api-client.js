@@ -24,7 +24,7 @@ class GithubApiClient {
         this.auth = options.auth || '';
         this.baseUrl = (options.baseUrl || 'https://api.github.com').replace(/\/+$/, '');
         this.timeout = options.timeout || 30000;
-        this.userAgent = options.userAgent || 'Publii';
+        this.userAgent = options.userAgent || 'Shanhe CMS';
 
         this.rest = {
             git: {

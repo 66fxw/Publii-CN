@@ -51,7 +51,13 @@ class App {
         this.mainWindow = null;
         this.app = startupSettings.app;
         this.basedir = startupSettings.basedir;
-        this.appDir = path.join(this.app.getPath('documents'), 'Publii');
+        // Shanhe CMS: use a brand-neutral data directory. If a legacy Publii
+        // data directory already exists, keep using it so existing sites remain
+        // accessible (no data loss / migration required).
+        const documentsDir = this.app.getPath('documents');
+        const shanheDir = path.join(documentsDir, 'Shanhe CMS');
+        const legacyDir = path.join(documentsDir, 'Publii');
+        this.appDir = fs.existsSync(shanheDir) ? shanheDir : (fs.existsSync(legacyDir) ? legacyDir : shanheDir);
         this.app.appDir = this.appDir;
         this.initPath = path.join(this.appDir, 'config', 'window-config.json');
         this.appConfigPath = path.join(this.appDir, 'config', 'app-config.json');
@@ -343,7 +349,7 @@ class App {
         try {
             siteConfig = JSON.parse(siteConfig);
         } catch (e) {
-            dialog.showErrorBox('Publii cannot read site config', 'There is an issue with file: ' + configFilePath + "\n\nError details: " + e.message);
+            dialog.showErrorBox('Shanhe CMS cannot read site config', 'There is an issue with file: ' + configFilePath + "\n\nError details: " + e.message);
             return;
         }
 
@@ -679,12 +685,12 @@ class App {
     // Check permissions errors
     hasPermissionsErrors (error) {
         if (error.code === 'EACCES') {
-            dialog.showErrorBox('Publii has no read/write access to the config folder', 'Please check the permissions of the Publii config folder and try to reopen the application.');
+            dialog.showErrorBox('Shanhe CMS has no read/write access to the config folder', 'Please check the permissions of the Shanhe CMS config folder and try to reopen the application.');
             return true;
         }
 
         if (error.code === 'EPERM') {
-            dialog.showErrorBox('Publii has no read/write access to the config folder', 'If you are using macOS 10.15+ - please open "System Preferences", go to "Security & Privacy" and under "Privacy Tab" please check if Publii has proper permissions for the "Files and Documents". For other operating systems - please check the file permissions for the Publii configuration folder.');
+            dialog.showErrorBox('Shanhe CMS has no read/write access to the config folder', 'If you are using macOS 10.15+ - please open "System Preferences", go to "Security & Privacy" and under "Privacy Tab" please check if Shanhe CMS has proper permissions for the "Files and Documents". For other operating systems - please check the file permissions for the Shanhe CMS configuration folder.');
             return true;
         }
 

@@ -280,7 +280,7 @@ class GitlabPages {
                 });
             }
 
-            return this.makeCommit(this.filesToRemove, this.updateTextFiles.bind(this), '[skip ci] Publii - remove files');
+            return this.makeCommit(this.filesToRemove, this.updateTextFiles.bind(this), '[skip ci] Shanhe CMS - remove files');
         }
 
         console.log(`[${ new Date().toUTCString() }] (!) NO FILES TO REMOVE DETECTED`);
@@ -320,7 +320,7 @@ class GitlabPages {
 
             if (this.filesToUpdate.length) {
                 console.log(`[${ new Date().toUTCString() }] (!) TEXT FILES TO UPDATE DETECTED`);
-                return this.makeCommit(this.filesToUpdate, this.uploadTextFiles.bind(this), '[skip ci] Publii - update non-binary files');
+                return this.makeCommit(this.filesToUpdate, this.uploadTextFiles.bind(this), '[skip ci] Shanhe CMS - update non-binary files');
             }
         }
 
@@ -361,7 +361,7 @@ class GitlabPages {
 
             if (this.filesToUpdate.length) {
                 console.log(`[${ new Date().toUTCString() }] (!) TEXT FILES TO UPLOAD DETECTED`);
-                return this.makeCommit(this.filesToUpdate, this.createBinaryFilesList.bind(this), '[skip ci] Publii - upload non-binary files');
+                return this.makeCommit(this.filesToUpdate, this.createBinaryFilesList.bind(this), '[skip ci] Shanhe CMS - upload non-binary files');
             }
         }
 
@@ -428,7 +428,7 @@ class GitlabPages {
             let operations = [this.binaryFilesUploadedCount, this.binaryFilesToUploadCount];
             this.setUploadProgress(progress, operations);
             console.log(`[${ new Date().toUTCString() }] (!) BINARY FILES UPDATED`);
-            this.makeCommit(commits, this.updateBinaryFiles.bind(this), '[skip ci] Publii - update ' + commits.length + ' files');
+            this.makeCommit(commits, this.updateBinaryFiles.bind(this), '[skip ci] Shanhe CMS - update ' + commits.length + ' files');
             return;
         }
 
@@ -454,7 +454,7 @@ class GitlabPages {
             let operations = [this.binaryFilesUploadedCount, this.binaryFilesToUploadCount];
             this.setUploadProgress(progress, operations);
             console.log(`[${ new Date().toUTCString() }] (!) BINARY FILES UPLOADED`);
-            this.makeCommit(commits, this.uploadBinaryFiles.bind(this), '[skip ci] Publii - upload ' + commits.length + ' files');
+            this.makeCommit(commits, this.uploadBinaryFiles.bind(this), '[skip ci] Shanhe CMS - upload ' + commits.length + ' files');
             return;
         }
 
@@ -481,7 +481,7 @@ class GitlabPages {
         });
 
         console.log(`[${ new Date().toUTCString() }] (!) REMOTE FILES LIST UPDATED`);
-        return this.makeCommit(commit, this.finishSync.bind(this), 'Publii - upload remote files list');
+        return this.makeCommit(commit, this.finishSync.bind(this), 'Shanhe CMS - upload remote files list');
     }
 
     finishSync () {
@@ -496,7 +496,7 @@ class GitlabPages {
         });
     }
 
-    makeCommit (operations, nextOperationCallback, commitMessage = 'Publii - deployment') {
+    makeCommit (operations, nextOperationCallback, commitMessage = 'Shanhe CMS - deployment') {
         this.client.Commits.create(this.projectID, this.branch, commitMessage, operations).then(res => {
             return nextOperationCallback();
         }).catch(err => {

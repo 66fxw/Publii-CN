@@ -16,7 +16,7 @@ export default {
         password: '',
         commitAuthor: '',
         commitEmail: '',
-        commitMessage: 'Publii: update content'
+        commitMessage: 'Shanhe CMS: update content'
     },
     github: {
         server: 'api.github.com',
